@@ -10,6 +10,7 @@ RUN chmod +x mvnw && ./mvnw -q -DskipTests package \
 
 FROM eclipse-temurin:25-jre-noble
 RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
     && apt-get install -y --no-install-recommends wget \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --system --gid 10001 app \

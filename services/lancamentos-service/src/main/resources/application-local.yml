@@ -1,0 +1,9 @@
+# Profile local: LocalStack, Keycloak e Postgres chegam pelas variáveis de ambiente.
+management:
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    br.com.fluxocaixa.lancamentos: INFO

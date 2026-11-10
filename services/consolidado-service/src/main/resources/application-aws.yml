@@ -1,0 +1,6 @@
+# Na AWS o SDK usa o endpoint regional. AWS_ENDPOINT_URL fica vazio.
+app:
+  aws:
+    endpoint-url: ${AWS_ENDPOINT_URL:}
+  security:
+    scope-prefix: ${APP_SECURITY_SCOPE_PREFIX:fluxo-caixa/}

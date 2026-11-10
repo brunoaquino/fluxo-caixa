@@ -1,0 +1,129 @@
+spring:
+  application:
+    name: consolidado-service
+  threads:
+    virtual:
+      enabled: true
+  lifecycle:
+    timeout-per-shutdown-phase: 45s
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/consolidado}
+    username: ${DB_USERNAME:consolidado}
+    password: ${DB_PASSWORD:consolidado}
+    hikari:
+      pool-name: consolidado-pool
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 2000
+      validation-timeout: 1000
+      idle-timeout: 30000
+      max-lifetime: 1800000
+      keepalive-time: 300000
+  flyway:
+    enabled: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 200ms
+      connect-timeout: 200ms
+      ssl:
+        enabled: ${REDIS_SSL:false}
+      lettuce:
+        pool:
+          enabled: true
+          max-active: 32
+          max-idle: 16
+          min-idle: 4
+          max-wait: 200ms
+  mvc:
+    problemdetails:
+      enabled: true
+
+server:
+  port: ${SERVER_PORT:8082}
+  shutdown: graceful
+  error:
+    include-message: never
+    include-stacktrace: never
+    include-binding-errors: never
+  tomcat:
+    connection-timeout: 5s
+
+app:
+  security:
+    comerciante-claim: ${APP_SECURITY_COMERCIANTE_CLAIM:comerciante_id}
+    scope-prefix: ${APP_SECURITY_SCOPE_PREFIX:}
+    jwt:
+      issuer-uri: ${JWT_ISSUER_URI:http://localhost:8080/realms/fluxo-caixa}
+      jwk-set-uri: ${JWT_JWK_SET_URI:}
+  messaging:
+    queue-url: ${CONSOLIDADO_QUEUE_URL:}
+    consumo-habilitado: true
+    wait-time-seconds: 20
+    max-messages: 10
+  aws:
+    region: ${AWS_REGION:sa-east-1}
+    endpoint-url: ${AWS_ENDPOINT_URL:}
+  cache:
+    ttl: 30s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+      group:
+        readiness:
+          include: readinessState,db
+    info:
+      access: unrestricted
+    prometheus:
+      access: unrestricted
+  health:
+    redis:
+      enabled: false
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/traces
+  otlp:
+    metrics:
+      export:
+        enabled: false
+  logging:
+    export:
+      otlp:
+        enabled: false
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    nome: consolidado-service
+    descricao: Projeção de saldo diário por comerciante
+
+logging:
+  structured:
+    format:
+      console: logstash
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html

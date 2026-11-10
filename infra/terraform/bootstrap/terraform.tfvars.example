@@ -1,0 +1,2 @@
+aws_region  = "sa-east-1"
+bucket_name = "fluxo-caixa-tfstate-SUBSTITUA_PELO_ACCOUNT_ID"

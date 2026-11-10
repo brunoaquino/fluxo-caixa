@@ -1,0 +1,96 @@
+# Exemplo de deploy. Nao roda em pull request.
+# Antes de usar, crie um Environment no GitHub (dev e prod) com:
+#   vars.AWS_DEPLOY_ROLE_ARN  role assumida via OIDC
+# A role precisa de ecr:GetAuthorizationToken, push nos repositorios
+# fluxo-caixa-<env>/lancamentos e fluxo-caixa-<env>/consolidado,
+# ecs:DescribeTaskDefinition, RegisterTaskDefinition, UpdateService e iam:PassRole
+# nas roles de execucao e de task.
+#
+# O Terraform e a fonte da task definition (variaveis de ambiente e secrets).
+# Este fluxo so troca a imagem. No proximo terraform apply, alinhe image_tag
+# com a tag publicada, senao o apply volta a revisao anterior.
+
+name: CD
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Ambiente
+        required: true
+        type: choice
+        options: [dev, prod]
+      image_tag:
+        description: Tag imutavel. Vazio usa o SHA do commit.
+        required: false
+        type: string
+  push:
+    tags: ["v*"]
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'prod' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: lancamentos
+            container: lancamentos
+          - service: consolidado
+            container: consolidado
+    env:
+      AWS_REGION: sa-east-1
+      DEPLOY_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'prod' }}
+      IMAGE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.image_tag != '' && inputs.image_tag || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build e push ARM64
+        uses: docker/build-push-action@v6
+        with:
+          context: services/${{ matrix.service }}-service
+          file: services/${{ matrix.service }}-service/Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: ${{ steps.ecr.outputs.registry }}/fluxo-caixa-${{ env.DEPLOY_ENV }}/${{ matrix.service }}:${{ env.IMAGE_TAG }}
+
+      - name: Baixar task definition atual
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition "fluxo-caixa-${DEPLOY_ENV}-${{ matrix.service }}" \
+            --query taskDefinition \
+            > task-definition.json
+
+      - id: render
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ matrix.container }}
+          image: ${{ steps.ecr.outputs.registry }}/fluxo-caixa-${{ env.DEPLOY_ENV }}/${{ matrix.service }}:${{ env.IMAGE_TAG }}
+
+      - uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render.outputs.task-definition }}
+          service: fluxo-caixa-${{ env.DEPLOY_ENV }}-${{ matrix.service }}
+          cluster: fluxo-caixa-${{ env.DEPLOY_ENV }}-cluster
+          wait-for-service-stability: true

@@ -1,0 +1,30 @@
+app:
+  messaging:
+    consumo-habilitado: false
+  security:
+    comerciante-claim: comerciante_id
+    scope-prefix: ""
+    jwt:
+      issuer-uri: http://localhost/issuer-teste
+      jwk-set-uri: ""
+  cache:
+    ttl: 30s
+
+management:
+  tracing:
+    sampling:
+      probability: 0
+  tracing.export.otlp.enabled: false
+  otlp:
+    metrics:
+      export:
+        enabled: false
+  logging:
+    export:
+      otlp:
+        enabled: false
+
+logging:
+  level:
+    root: WARN
+    br.com.fluxocaixa.consolidado: INFO

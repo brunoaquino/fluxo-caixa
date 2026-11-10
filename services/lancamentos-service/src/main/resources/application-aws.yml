@@ -1,0 +1,9 @@
+# Profile aws: endpoint real (AWS_ENDPOINT_URL vazio) e credencial da task role.
+# APP_SECURITY_SCOPE_PREFIX=fluxo-caixa/ no Cognito.
+server:
+  forward-headers-strategy: framework
+
+management:
+  endpoint:
+    health:
+      show-details: never

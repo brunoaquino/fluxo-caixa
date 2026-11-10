@@ -1,0 +1,4 @@
+# LocalStack e Keycloak. O endpoint só é aplicado neste profile.
+app:
+  aws:
+    endpoint-url: ${AWS_ENDPOINT_URL:http://localhost:4566}

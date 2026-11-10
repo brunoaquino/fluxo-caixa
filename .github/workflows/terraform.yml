@@ -56,7 +56,8 @@ jobs:
         run: tflint --init --config=.tflint.hcl
       - name: Lint
         working-directory: infra/terraform
-        run: tflint --recursive --config=.tflint.hcl
+        # Caminho relativo é resolvido em cada subdiretório no modo --recursive.
+        run: tflint --recursive --config="${PWD}/.tflint.hcl"
 
   checkov:
     runs-on: ubuntu-latest

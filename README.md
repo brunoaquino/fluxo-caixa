@@ -8,12 +8,12 @@ O requisito que organiza a arquitetura é este: o controle de lançamentos perma
 
 A documentação final do desafio está em PDF, diagramada e com sumário, na pasta [`documentos-entregaveis-desafio/`](documentos-entregaveis-desafio/README.md). Para ler tudo de uma vez, abra a [documentação completa](documentos-entregaveis-desafio/fluxo-caixa-documentacao-completa.pdf). Os documentos também estão separados por tema (requisitos, DDD, arquitetura e C4, ADRs, segurança, observabilidade, custos, transição, testes, entre outros).
 
-A pasta [`documentos-brutos/`](documentos-brutos/README.md) (antiga `docs/`) contém os **documentos brutos**: as fontes em Markdown, com os diagramas em `documentos-brutos/assets/diagramas/`, a partir das quais os PDFs são gerados (`make pdf`). Elas ficam versionadas junto com o código e prevalecem se houver divergência. A correspondência entre cada PDF e sua fonte está na seção [Documentação](#documentação).
+A pasta [`documentos-brutos/`](documentos-brutos/README.md) contém os **documentos brutos**: as fontes em Markdown, com os diagramas em `documentos-brutos/assets/diagramas/`, a partir das quais os PDFs são gerados (`make pdf`). Elas ficam versionadas junto com o código e prevalecem se houver divergência. A correspondência entre cada PDF e sua fonte está na seção [Documentação](#documentação).
 
 | Pasta | O que é | Para quem |
 |---|---|---|
 | [`documentos-entregaveis-desafio/`](documentos-entregaveis-desafio/README.md) | Entregáveis finais em PDF, com capa, sumário e diagramas | Avaliação e leitura |
-| [`documentos-brutos/`](documentos-brutos/README.md) | Fontes em Markdown (antiga `docs/`), ADRs, blueprint, Structurizr e diagramas | Manutenção e revisão no GitHub |
+| [`documentos-brutos/`](documentos-brutos/README.md) | Fontes em Markdown, ADRs, blueprint, Structurizr e diagramas | Manutenção e revisão no GitHub |
 
 ## Como o requisito é atendido
 
@@ -45,7 +45,7 @@ fluxo-caixa/
 ├── README.md
 ├── Makefile
 ├── documentos-entregaveis-desafio/ # entregáveis finais em PDF
-├── documentos-brutos/             # documentos brutos (antiga docs/): fontes Markdown, ADRs e diagramas
+├── documentos-brutos/             # documentos brutos: fontes Markdown, ADRs e diagramas
 ├── services/
 │   ├── lancamentos-service/       # porta 8081
 │   └── consolidado-service/       # porta 8082
@@ -173,7 +173,7 @@ Produção em `us-east-1`: CloudFront com WAF, API Gateway REST regional com WAF
 
 ## Documentação
 
-Cada tema tem o PDF entregável, em [`documentos-entregaveis-desafio/`](documentos-entregaveis-desafio/README.md), e o documento bruto em Markdown que o origina, em [`documentos-brutos/`](documentos-brutos/README.md) (antiga `docs/`). O volume único com tudo é a [documentação completa em PDF](documentos-entregaveis-desafio/fluxo-caixa-documentacao-completa.pdf).
+Cada tema tem o PDF entregável, em [`documentos-entregaveis-desafio/`](documentos-entregaveis-desafio/README.md), e o documento bruto em Markdown que o origina, em [`documentos-brutos/`](documentos-brutos/README.md). O volume único com tudo é a [documentação completa em PDF](documentos-entregaveis-desafio/fluxo-caixa-documentacao-completa.pdf).
 
 | Tema | PDF entregável | Documento bruto | Conteúdo |
 |---|---|---|---|

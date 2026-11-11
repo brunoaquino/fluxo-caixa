@@ -41,7 +41,7 @@ services:
 
   localstack:
     profiles: ["infra", "completo"]
-    image: localstack/localstack:4.7
+    image: localstack/localstack:4.14
     container_name: fluxo-caixa-localstack
     environment:
       SERVICES: sns,sqs
@@ -60,7 +60,7 @@ services:
 
   keycloak:
     profiles: ["infra", "completo"]
-    image: quay.io/keycloak/keycloak:26.4.7
+    image: quay.io/keycloak/keycloak:26.8.2-1
     container_name: fluxo-caixa-keycloak
     command: ["start-dev", "--import-realm"]
     environment:
@@ -102,7 +102,7 @@ services:
   # O log JSON do servico traz traceId, spanId e correlationId.
   alloy:
     profiles: ["infra", "completo"]
-    image: grafana/alloy:v1.10.2
+    image: grafana/alloy:v1.21.3
     container_name: fluxo-caixa-alloy
     command:
       - run

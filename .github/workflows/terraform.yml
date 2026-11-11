@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: 1.14.7
           terraform_wrapper: false
@@ -40,7 +40,7 @@ jobs:
         env: [dev, hml, prod]
     steps:
       - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: 1.14.7
           terraform_wrapper: false
@@ -53,7 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: 1.14.7
           terraform_wrapper: false
@@ -84,7 +84,7 @@ jobs:
         module: [messaging, network, alb, ecs-service, rds-postgres, edge]
     steps:
       - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: 1.14.7
           terraform_wrapper: false
@@ -148,7 +148,7 @@ jobs:
         with:
           role-to-assume: ${{ vars.AWS_PLAN_ROLE_ARN }}
           aws-region: us-east-1
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         if: steps.gate.outputs.run == 'true'
         with:
           terraform_version: 1.14.7
@@ -193,7 +193,7 @@ jobs:
       - name: Sem role, sem plan
         if: vars.AWS_PLAN_ROLE_ARN == '' || vars.TF_STATE_BUCKET == ''
         run: echo "AWS_PLAN_ROLE_ARN ou TF_STATE_BUCKET ausente no environment ${{ matrix.env }}. Plan ignorado."
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         if: vars.AWS_PLAN_ROLE_ARN != '' && vars.TF_STATE_BUCKET != ''
         with:
           terraform_version: 1.14.7

@@ -9,7 +9,7 @@ name: fluxo-caixa
 services:
   postgres:
     profiles: ["infra", "completo"]
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     container_name: fluxo-caixa-postgres
     environment:
       POSTGRES_USER: postgres
@@ -28,7 +28,7 @@ services:
 
   redis:
     profiles: ["infra", "completo"]
-    image: redis:7.4-alpine
+    image: redis:8.10-alpine
     container_name: fluxo-caixa-redis
     ports:
       - "6379:6379"

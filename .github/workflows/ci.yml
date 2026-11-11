@@ -4,22 +4,20 @@ on:
   pull_request:
     paths:
       - "services/**"
-      - "infra/**"
-      - ".github/**"
+      - ".github/workflows/ci.yml"
       - "Makefile"
   push:
     branches: [main, master]
     paths:
       - "services/**"
-      - "infra/**"
-      - ".github/**"
+      - ".github/workflows/ci.yml"
       - "Makefile"
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -31,9 +29,9 @@ jobs:
       matrix:
         service: [lancamentos-service, consolidado-service]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "25"
@@ -48,7 +46,7 @@ jobs:
 
       - name: Relatorios de teste
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: reports-${{ matrix.service }}
           if-no-files-found: ignore
@@ -60,7 +58,7 @@ jobs:
       # SCA no codigo e nas dependencias Maven. Trivy fs no lugar do OWASP Dependency-Check:
       # ja esta no pipeline, nao pede chave da NVD e olha o pom junto com o que o verify gerou.
       - name: SCA com Trivy no filesystem
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: services/${{ matrix.service }}
@@ -71,14 +69,14 @@ jobs:
 
       # SBOM CycloneDX via syft, anexado ao job para saber o que entrou na build.
       - name: SBOM CycloneDX
-        uses: anchore/sbom-action@v0
+        uses: anchore/sbom-action@v0.24.3
         with:
           path: services/${{ matrix.service }}
           format: cyclonedx-json
           output-file: sbom-${{ matrix.service }}.cdx.json
 
       - name: Publicar SBOM
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sbom-${{ matrix.service }}
           path: sbom-${{ matrix.service }}.cdx.json
@@ -99,7 +97,7 @@ jobs:
 
       - name: SonarCloud
         if: steps.sonar-gate.outputs.run == 'true'
-        uses: SonarSource/sonarqube-scan-action@v5
+        uses: SonarSource/sonarqube-scan-action@v8
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
@@ -110,11 +108,11 @@ jobs:
             -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
 
-      - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-buildx-action@v4
 
       - name: Build da imagem ARM64
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: services/${{ matrix.service }}
           file: services/${{ matrix.service }}/Dockerfile
@@ -124,7 +122,7 @@ jobs:
           outputs: type=oci,tar=false,dest=/tmp/${{ matrix.service }}
 
       - name: Scan Trivy
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           input: /tmp/${{ matrix.service }}
           format: table
@@ -141,13 +139,13 @@ jobs:
       contents: read
       security-events: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: github/codeql-action/init@v3
+      - uses: github/codeql-action/init@v4
         with:
           languages: java
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "25"
@@ -158,18 +156,18 @@ jobs:
           ./services/lancamentos-service/mvnw -f services/lancamentos-service/pom.xml -B -DskipTests package
           ./services/consolidado-service/mvnw -f services/consolidado-service/pom.xml -B -DskipTests package
 
-      - uses: github/codeql-action/analyze@v3
+      - uses: github/codeql-action/analyze@v4
 
   # Segredos no historico do git. Nao substitui a revisao, mas pega token commitado.
   gitleaks:
     name: Gitleaks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: gitleaks/gitleaks-action@v2
+      - uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -182,6 +180,6 @@ jobs:
       contents: read
       pull-requests: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/dependency-review-action@v4
+      - uses: actions/dependency-review-action@v5.0.0

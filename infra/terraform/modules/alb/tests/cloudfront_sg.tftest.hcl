@@ -76,7 +76,7 @@ run "listener_so_encaminha_as_duas_apis" {
     vpc_id                  = "vpc-prod"
     subnet_ids              = ["subnet-a", "subnet-b", "subnet-c"]
     deletion_protection     = true
-    access_logs_bucket_name = "fluxo-caixa-prod-alb-logs-123456789012"
+    access_logs_bucket_name = "fluxo-caixa-prod-alb-logs-123456789012" # gitleaks:allow nome de bucket de teste, nao credencial
     logs_kms_key_arn        = "arn:aws:kms:us-east-1:123456789012:key/alb-logs"
     enable_waf              = false
     services = {

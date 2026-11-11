@@ -1,32 +1,150 @@
 # Dependabot, e nao Renovate: um unico bot evita PR duplicado.
-# O Dependabot ja cobre Maven, Docker, GitHub Actions e Terraform sem app extra.
+# Segunda-feira, 09:00 em America/Sao_Paulo. Cada ecossistema abre no maximo 5 PRs.
+# Groups juntam as atualizacoes do ecossistema: minor+patch num PR, major noutro.
 version: 2
 updates:
   - package-ecosystem: maven
-    directory: /services/lancamentos-service
+    directories:
+      - /services/lancamentos-service
+      - /services/consolidado-service
     schedule:
       interval: weekly
-  - package-ecosystem: maven
-    directory: /services/consolidado-service
-    schedule:
-      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - maven
+    commit-message:
+      prefix: build(deps)
+    groups:
+      maven-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+      maven-major:
+        patterns:
+          - "*"
+        update-types:
+          - major
+    # ADR 0023: Resilience4j 2.4.0 so suporta Spring Boot 4.0.x.
+    # O patch 4.0.x continua. Minor e major do Boot, e o springdoc acima de 3.0.x, ficam de fora.
+    ignore:
+      - dependency-name: "org.springframework.boot:*"
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+      - dependency-name: "org.springdoc:*"
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+
   - package-ecosystem: docker
-    directory: /services/lancamentos-service
+    directories:
+      - /services/lancamentos-service
+      - /services/consolidado-service
     schedule:
       interval: weekly
-  - package-ecosystem: docker
-    directory: /services/consolidado-service
-    schedule:
-      interval: weekly
-  - package-ecosystem: docker
+      day: monday
+      time: "09:00"
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - docker
+    commit-message:
+      prefix: build(deps)
+    groups:
+      docker-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+      docker-major:
+        patterns:
+          - "*"
+        update-types:
+          - major
+
+  # /infra/local so tem docker-compose.yml. O ecossistema docker exige Dockerfile e falha o job.
+  - package-ecosystem: docker-compose
     directory: /infra/local
     schedule:
       interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - docker-compose
+    commit-message:
+      prefix: build(deps)
+    groups:
+      compose-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+      compose-major:
+        patterns:
+          - "*"
+        update-types:
+          - major
+
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: build(deps)
+    groups:
+      actions-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+      actions-major:
+        patterns:
+          - "*"
+        update-types:
+          - major
+
   - package-ecosystem: terraform
     directory: /infra/terraform
     schedule:
       interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - terraform
+    commit-message:
+      prefix: build(deps)
+    groups:
+      terraform-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+      terraform-major:
+        patterns:
+          - "*"
+        update-types:
+          - major

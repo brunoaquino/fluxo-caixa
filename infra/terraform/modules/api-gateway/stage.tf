@@ -1,3 +1,10 @@
+check "consolidado_acima_do_pico" {
+  assert {
+    condition     = !var.require_consolidado_above_peak || var.route_throttling.consolidado_read.rate_limit > 50
+    error_message = "hml e prod exigem throttle do consolidado acima do pico de 50 req/s."
+  }
+}
+
 locals {
   api_fingerprint = sha1(jsonencode({
     routes = {

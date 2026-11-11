@@ -36,6 +36,9 @@ on:
         default: ""
   push:
     branches: [main]
+    paths:
+      - "services/**"
+      - ".github/workflows/cd.yml"
 
 permissions:
   id-token: write
@@ -73,7 +76,7 @@ jobs:
       digest_lancamentos: ${{ steps.build-lancamentos.outputs.digest }}
       digest_consolidado: ${{ steps.build-consolidado.outputs.digest }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Role de deploy
         env:
@@ -84,7 +87,7 @@ jobs:
             exit 1
           fi
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
           aws-region: us-east-1
@@ -95,12 +98,12 @@ jobs:
       - id: meta
         run: echo "tag=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
 
-      - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-buildx-action@v4
 
       - id: build-lancamentos
         name: Build lancamentos
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: services/lancamentos-service
           file: services/lancamentos-service/Dockerfile
@@ -112,7 +115,7 @@ jobs:
 
       - id: build-consolidado
         name: Build consolidado
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: services/consolidado-service
           file: services/consolidado-service/Dockerfile
@@ -123,7 +126,7 @@ jobs:
           tags: ${{ steps.ecr.outputs.registry }}/fluxo-caixa-dev/consolidado:${{ github.sha }}
 
       # Assinatura keyless. O certificado sai do OIDC do GitHub, sem chave privada no repo.
-      - uses: sigstore/cosign-installer@v3
+      - uses: sigstore/cosign-installer@v4.1.3
 
       - name: Assinar as imagens
         run: |
@@ -144,9 +147,9 @@ jobs:
           - service: consolidado
             container: consolidado
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
           aws-region: us-east-1
@@ -230,7 +233,7 @@ jobs:
           - service: consolidado
             container: consolidado
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Tag obrigatoria
         run: |
@@ -239,7 +242,7 @@ jobs:
             exit 1
           fi
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
           aws-region: us-east-1
@@ -267,7 +270,7 @@ jobs:
           digest=$(crane digest "$dest")
           echo "digest=$digest" >> "$GITHUB_OUTPUT"
 
-      - uses: sigstore/cosign-installer@v3
+      - uses: sigstore/cosign-installer@v4.1.3
 
       - name: Assinar a copia
         env:

@@ -96,6 +96,17 @@ updates:
           - "*"
         update-types:
           - major
+    # RDS de producao e PostgreSQL 17. Major acima de 17 quebra o espelho local.
+    # ElastiCache de producao e Valkey 8.2, compativel com o Valkey OSS 8.1.
+    # Nao existe a tag valkey/valkey:8.2-alpine, entao o cache local permanece
+    # em redis:7.4 e nao acompanha major do Redis (8.x nao e o motor de producao).
+    ignore:
+      - dependency-name: "postgres"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "redis"
+        update-types:
+          - "version-update:semver-major"
 
   - package-ecosystem: github-actions
     directory: /

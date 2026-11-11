@@ -44,11 +44,11 @@ public class RastreioMensagem {
         Map<String, String> carrier = atributos == null ? Map.of() : atributos;
         String correlationId = CorrelationId.resolver(GETTER.get(carrier, "correlationId"));
         Span span = propagator.extract(carrier, GETTER)
-                .name("consolidado.consumir.lancamento")
+                .name("lancamento process")
                 .kind(Span.Kind.CONSUMER)
-                .tag("messaging.system", "sqs")
-                .tag("messaging.operation", "receive")
-                .remoteServiceName("lancamentos-service")
+                .tag("messaging.system", "aws_sqs")
+                .tag("messaging.operation", "process")
+                .tag("messaging.destination.kind", "queue")
                 .start();
         try (Tracer.SpanInScope ignored = tracer.withSpan(span)) {
             span.tag("correlation.id", correlationId);

@@ -22,6 +22,7 @@ module "fluxo_caixa" {
 | `image_tag` | `string` | Tag imutavel publicada no ECR. |
 | `acm_certificate_arn` | `string` | Certificado ACM us-east-1 do CloudFront. Nulo usa *.cloudfront.net. |
 | `domain_names` | `list(string)` | Aliases do CloudFront. Vazio junto com acm_certificate_arn nulo. |
+| `cognito_domain_prefix` | `string` | Prefixo do dominio hospedado do Cognito. Nulo usa fluxo-caixa-<env>-<account_id>. |
 | `adot_image` | `string` | Imagem do ADOT collector, com tag fixa e suporte a ARM64. |
 | `rds_engine_version` | `string` | Versao menor do PostgreSQL 17. |
 | `redis_engine_version` | `string` | Versao do Valkey. |
@@ -42,6 +43,8 @@ module "fluxo_caixa" {
 | `cognito_user_pool_id` | User pool. |
 | `cognito_user_pool_client_id` | App client. |
 | `cognito_issuer_uri` | Issuer dos access tokens. |
+| `cognito_domain` | Prefixo do dominio hospedado do Cognito. |
+| `cognito_token_endpoint` | Token endpoint OAuth do Cognito. |
 | `lancamentos_topic_arn` | Topico SNS dos eventos de lancamento. |
 | `consolidado_queue_url` | Fila consumida pelo consolidado. |
 | `consolidado_dlq_url` | DLQ do consolidado. |

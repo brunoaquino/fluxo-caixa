@@ -30,9 +30,19 @@ public class RastreadorDePublicacao {
             entrada.put("tracestate", evento.traceState());
         }
         Span span = propagator.extract(entrada, (carrier, chave) -> carrier.get(chave))
-                .name("publicar-lancamento")
+                .name("lancamento publish")
                 .kind(Span.Kind.PRODUCER)
+                .tag("messaging.system", "aws_sns")
+                .tag("messaging.operation", "publish")
+                .tag("rpc.system", "aws-api")
+                .tag("rpc.service", "SNS")
+                .tag("rpc.method", "Publish")
+                .tag("peer.service", "AmazonSNS")
                 .start();
+        marcar(span, "eventId", evento.id().toString());
+        marcar(span, "lancamentoId", evento.aggregateId().toString());
+        marcar(span, "comercianteId", evento.comercianteId());
+        marcar(span, "correlation.id", evento.correlationId());
         Tracer.SpanInScope escopo = tracer.withSpan(span);
         Map<String, String> saida = new LinkedHashMap<>();
         propagator.inject(span.context(), saida, (carrier, chave, valor) -> carrier.put(chave, valor));
@@ -45,8 +55,15 @@ public class RastreadorDePublicacao {
         return new Escopo(span, escopo, new AtributosDeRastreio(
                 saida.get("traceparent"),
                 saida.get("tracestate"),
-                evento.correlationId()
+                evento.correlationId(),
+                saida.get("X-Amzn-Trace-Id")
         ));
+    }
+
+    private static void marcar(Span span, String chave, String valor) {
+        if (preenchido(valor)) {
+            span.tag(chave, valor);
+        }
     }
 
     private static void colocar(String chave, String valor) {

@@ -20,6 +20,8 @@ class SeletorConexaoTest {
         assertThat(config.getMaxLifetime()).isEqualTo(900_000L);
         assertThat(config.getConnectionInitSql()).contains("statement_timeout");
         assertThat(config.isReadOnly()).isFalse();
+        assertThat(config.getDataSourceProperties().getProperty("connectTimeout")).isEqualTo("3");
+        assertThat(config.getDataSourceProperties().getProperty("socketTimeout")).isEqualTo("5");
     }
 
     @Test
@@ -44,6 +46,8 @@ class SeletorConexaoTest {
         assertThat(config.getDataSourceProperties().getProperty("secretsManagerSecretId")).isEqualTo(arn);
         assertThat(config.getDataSourceProperties().getProperty("secretsManagerRegion")).isEqualTo("us-east-1");
         assertThat(config.getDataSourceProperties().getProperty("secretsManagerEndpoint")).isEqualTo("http://localhost:4566");
+        assertThat(config.getDataSourceProperties().getProperty("connectTimeout")).isEqualTo("3000");
+        assertThat(config.getDataSourceProperties().getProperty("socketTimeout")).isEqualTo("5000");
         assertThat(config.isReadOnly()).isTrue();
     }
 

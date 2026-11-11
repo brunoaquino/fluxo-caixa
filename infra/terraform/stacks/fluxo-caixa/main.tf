@@ -117,6 +117,7 @@ module "cognito" {
   source = "../../modules/cognito"
 
   name_prefix         = local.name_prefix
+  domain_prefix       = var.cognito_domain_prefix
   deletion_protection = local.cfg.cognito_deletion_protection
   log_retention_days  = local.cfg.log_retention_days
   logs_kms_key_arn    = module.kms.key_arns["logs"]
@@ -130,7 +131,6 @@ module "alb" {
   subnet_ids              = module.network.app_subnet_ids
   deletion_protection     = local.cfg.alb_deletion_protection
   access_logs_bucket_name = local.access_logs_bucket_name
-  logs_kms_key_arn        = module.kms.key_arns["alb-logs"]
   enable_waf              = false
 
   services = {
@@ -293,15 +293,16 @@ module "ecs_lancamentos" {
 
   environment = merge(
     {
-      SERVER_PORT                 = "8081"
-      DB_URL                      = "jdbc:postgresql://${module.rds_lancamentos.endpoint}:${module.rds_lancamentos.port}/${module.rds_lancamentos.db_name}"
-      DB_SECRET_ARN               = module.rds_lancamentos.master_user_secret_arn
-      AWS_REGION                  = var.aws_region
-      JWT_ISSUER_URI              = module.cognito.issuer_uri
-      APP_SECURITY_SCOPE_PREFIX   = "fluxo-caixa/"
-      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
-      SPRING_PROFILES_ACTIVE      = "aws"
-      LANCAMENTOS_TOPIC_ARN       = module.messaging.topic_arn
+      SERVER_PORT                             = "8081"
+      DB_URL                                  = "jdbc:postgresql://${module.rds_lancamentos.endpoint}:${module.rds_lancamentos.port}/${module.rds_lancamentos.db_name}"
+      DB_SECRET_ARN                           = module.rds_lancamentos.master_user_secret_arn
+      AWS_REGION                              = var.aws_region
+      JWT_ISSUER_URI                          = module.cognito.issuer_uri
+      APP_SECURITY_SCOPE_PREFIX               = "fluxo-caixa/"
+      OTEL_EXPORTER_OTLP_ENDPOINT             = "http://localhost:4318"
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY = local.tracing_sampling_probability
+      SPRING_PROFILES_ACTIVE                  = "aws"
+      LANCAMENTOS_TOPIC_ARN                   = module.messaging.topic_arn
     },
     module.rds_lancamentos.reader_endpoint == null ? {} : {
       DB_READER_URL = "jdbc:postgresql://${module.rds_lancamentos.reader_endpoint}:${module.rds_lancamentos.port}/${module.rds_lancamentos.db_name}"
@@ -377,18 +378,19 @@ module "ecs_consolidado" {
 
   environment = merge(
     {
-      SERVER_PORT                 = "8082"
-      DB_URL                      = "jdbc:postgresql://${module.rds_consolidado.endpoint}:${module.rds_consolidado.port}/${module.rds_consolidado.db_name}"
-      DB_SECRET_ARN               = module.rds_consolidado.master_user_secret_arn
-      AWS_REGION                  = var.aws_region
-      JWT_ISSUER_URI              = module.cognito.issuer_uri
-      APP_SECURITY_SCOPE_PREFIX   = "fluxo-caixa/"
-      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
-      SPRING_PROFILES_ACTIVE      = "aws"
-      CONSOLIDADO_QUEUE_URL       = module.messaging.queue_url
-      REDIS_HOST                  = module.redis.primary_endpoint
-      REDIS_PORT                  = tostring(module.redis.port)
-      REDIS_SSL                   = "true"
+      SERVER_PORT                             = "8082"
+      DB_URL                                  = "jdbc:postgresql://${module.rds_consolidado.endpoint}:${module.rds_consolidado.port}/${module.rds_consolidado.db_name}"
+      DB_SECRET_ARN                           = module.rds_consolidado.master_user_secret_arn
+      AWS_REGION                              = var.aws_region
+      JWT_ISSUER_URI                          = module.cognito.issuer_uri
+      APP_SECURITY_SCOPE_PREFIX               = "fluxo-caixa/"
+      OTEL_EXPORTER_OTLP_ENDPOINT             = "http://localhost:4318"
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY = local.tracing_sampling_probability
+      SPRING_PROFILES_ACTIVE                  = "aws"
+      CONSOLIDADO_QUEUE_URL                   = module.messaging.queue_url
+      REDIS_HOST                              = module.redis.primary_endpoint
+      REDIS_PORT                              = tostring(module.redis.port)
+      REDIS_SSL                               = "true"
     },
     module.rds_consolidado.reader_endpoint == null ? {} : {
       DB_READER_URL = "jdbc:postgresql://${module.rds_consolidado.reader_endpoint}:${module.rds_consolidado.port}/${module.rds_consolidado.db_name}"

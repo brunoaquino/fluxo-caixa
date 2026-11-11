@@ -13,7 +13,7 @@ Cliente
        /api/v1/lancamentos* e /api/v1/consolidados* vao ao API Gateway
        o comportamento default devolve 404 na funcao, sem chamar a origem
   -> API Gateway REST regional (stage v1)
-       authorizer Cognito com escopo por rota
+       authorizer Cognito com escopo por rota (a Lambda de pre-token v2 grava `comerciante_id` e os escopos do resource server, então o `USER_PASSWORD_AUTH` passa na borda)
        WAF regional exige X-Origin-Verify (valor atual ou anterior)
        VPC Link v2, HTTP_PROXY, timeout 10 s
   -> ALB interno, sem IP publico
@@ -104,12 +104,12 @@ O `backend "s3" {}` do ambiente é parcial. Bucket, key `fluxo-caixa/<env>/terra
 
 ```bash
 make tf-init ENV=dev
-make tf-plan ENV=dev
+make tf-plan ENV=dev AWS_PROFILE=aquino-dev
 make tf-validate
 make tf-test
 ```
 
-`tf-plan` grava `<env>.tfplan`. Não aplique produção sem esse arquivo revisado e sem aprovação. O bucket de state tem `prevent_destroy`.
+`tf-validate` inicializa cada raiz num `TF_DATA_DIR` temporário e não lê o state, mesmo que o `.terraform/` do ambiente já aponte para o S3. `tf-init` e `tf-plan` usam o backend do ambiente e respeitam `AWS_PROFILE` do comando ou do ambiente. `tf-plan` grava `<env>.tfplan`. Não aplique produção sem esse arquivo revisado e sem aprovação. O bucket de state tem `prevent_destroy`.
 
 Promoção entre ambientes é de imagem, não de state. O CD constrói uma vez (tag = SHA), publica no ECR de dev, assina com cosign e, em hml/prod, copia o mesmo digest. O Terraform de cada ambiente continua dono da task definition; alinhe `image_tag` antes do próximo apply para ele não voltar uma revisão antiga.
 
@@ -117,7 +117,9 @@ Promoção entre ambientes é de imagem, não de state. O CD constrói uma vez (
 
 O RDS cria o secret (`manage_master_user_password`) e já associa a função de rotação gerenciada. O provider 6.72 não tem agenda no `aws_db_instance`. `aws_secretsmanager_secret_rotation` só ajusta `automatically_after_days` e deixa `rotation_lambda_arn` de fora, para não substituir a função do RDS. `rotate_immediately = false` evita rotacionar a senha em todo apply.
 
-A CMK do secret é outra, distinta da CMK do storage. Toda CMK do projeto tem `enable_key_rotation = true`.
+A task recebe `MANAGEMENT_TRACING_SAMPLING_PROBABILITY`: 1.0 em dev, 0.1 em hml e prod. Isso só vale para trace sem pai. O header `X-Amzn-Trace-Id` com `Sampled` continua decidindo o filho. O processo Java não lê `OTEL_PROPAGATORS`.
+
+A CMK do secret é outra, distinta da CMK do storage. Toda CMK do projeto tem `enable_key_rotation = true`. São nove em cada ambiente: storage e secret de cada RDS, ElastiCache, mensageria, logs, ECR e `origin-verify`. O access log do ALB fica em SSE-S3. O ELB não grava nesse bucket com CMK, então não há chave `alb-logs`.
 
 EventBridge escuta `AWS Secrets Manager Rotation Failed` e os eventos de CloudTrail `RotationFailed` / `RotationAbandoned`, e publica no tópico de alertas. O segredo `X-Origin-Verify` entra nesse mapa quando o API Gateway está ligado.
 

@@ -68,7 +68,7 @@ Nada desta lista está no caminho do RNF crítico. Cada item diz qual dor o traz
 
 **Dor.** A estimativa de [custos](08-custos.md) vai descolar da fatura no primeiro mês, sobretudo NAT, endpoint e log.
 
-**Como.** Budget com alerta em 50% e 80% do previsto (USD 777 em prod, USD 356 em hml e USD 143 em dev, na conta do [documento 08](08-custos.md), ambientes 24×7). Tag obrigatória `system=fluxo-caixa` e `env`. Revisão mensal das três linhas que realmente pesam: endpoint, NAT e RDS. Rightsizing do RDS pelo credit balance, não pelo palpite. Infracost no pull request, como no [documento 14](14-cicd-e-qualidade.md). Isso é processo, e o Terraform já nasce com a tag.
+**Como.** Budget com alerta em 50% e 80% do previsto (USD 778 em prod, USD 359 em hml e USD 147 em dev, na conta do [documento 08](08-custos.md), ambientes 24×7). Tag obrigatória `system=fluxo-caixa` e `env`. Revisão mensal das três linhas que realmente pesam: endpoint, NAT e RDS. Rightsizing do RDS pelo credit balance, não pelo palpite. Infracost no pull request, como no [documento 14](14-cicd-e-qualidade.md). Isso é processo, e o Terraform já nasce com a tag.
 
 ## 12. Feature flags
 

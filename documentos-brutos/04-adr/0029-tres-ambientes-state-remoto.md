@@ -20,7 +20,7 @@ O ADR 0010 escolheu Terraform com ambientes `dev` e `prod` e state remoto. A rev
 ### 1. Dev e prod, hml “quando precisar”
 
 - Positivo: uma conta a menos de NAT e de RDS.
-- Negativo: o primeiro ensaio de migração Flyway com duas versões da aplicação acontece em prod. O custo de hml (USD 356/mês em `us-east-1` se ficar ligado o mês inteiro) é o preço de não ensaiar em prod.
+- Negativo: o primeiro ensaio de migração Flyway com duas versões da aplicação acontece em prod. O custo de hml (USD 359/mês em `us-east-1` se ficar ligado o mês inteiro) é o preço de não ensaiar em prod.
 
 ### 2. Três contas AWS, uma por ambiente
 
@@ -55,7 +55,7 @@ O pipeline de Terraform (`fmt`, `validate`, `tflint`, Checkov, e o que o [docume
 ### Positivas
 
 - O ensaio de Flyway com rolling tem um lugar que não é o caixa do comerciante.
-- A fatura de dev (USD 143) e a de hml (USD 356) estão na estimativa antes de alguém criar “rapidinho”.
+- A fatura de dev (USD 147) e a de hml (USD 359) estão na estimativa antes de alguém criar “rapidinho”.
 
 ### Negativas
 

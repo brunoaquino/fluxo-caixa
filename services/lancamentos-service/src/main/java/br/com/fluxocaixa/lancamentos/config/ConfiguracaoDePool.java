@@ -34,6 +34,13 @@ public final class ConfiguracaoDePool {
             config.addDataSourceProperty("wrapperPlugins", escolha.plugins());
             config.addDataSourceProperty("secretsManagerSecretId", escolha.secretArn());
             config.addDataSourceProperty("secretsManagerRegion", escolha.region());
+            // O wrapper lê connectTimeout/socketTimeout em milissegundos e trunca
+            // para segundos no pgjdbc. 3000 ms e 5000 ms viram 3 s e 5 s.
+            config.addDataSourceProperty("connectTimeout", "3000");
+            config.addDataSourceProperty("socketTimeout", "5000");
+        } else {
+            config.addDataSourceProperty("connectTimeout", "3");
+            config.addDataSourceProperty("socketTimeout", "5");
         }
         return config;
     }

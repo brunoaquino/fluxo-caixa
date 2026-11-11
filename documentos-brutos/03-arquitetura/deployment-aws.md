@@ -31,7 +31,7 @@ Dev não cria endpoint: o tráfego AWS sai pelo único NAT. Hml cria os endpoint
 - WAF de escopo CLOUDFRONT: Common, Known Bad Inputs, SQLi, IP Reputation, rate-based por IP. AnonymousIpList em count no dev. Log do WAF com corpo e `Authorization` redigidos.
 - Com `enable_api_gateway = true`, `/api/v1/lancamentos*` e `/api/v1/consolidados*` usam a origem HTTPS do API Gateway (`origin_path` `/v1`, header `X-Origin-Verify`, origin request policy `AllViewerExceptHostHeader`). O comportamento default continua 404 na função, sem chamar origem.
 - REST API regional, stage `v1`, authorizer Cognito por escopo, VPC Link v2 no ALB. WAF regional no stage exige o header. Rotação do valor em 30 dias (90 em dev), mantendo o anterior.
-- ALB interno, listener HTTP 80. O TLS da internet termina no CloudFront; o trecho VPC Link → ALB é HTTP na rede da AWS. Regras `/api/v1/lancamentos*` e `/api/v1/consolidados*`, mais o prefixo `/v1` reescrito quando o gateway está ligado. Health check: `GET /actuator/health/readiness`, direto no target, sem passar pelo listener.
+- ALB interno, listener HTTP 80. O TLS da internet termina no CloudFront; o trecho VPC Link → ALB é HTTP na rede da AWS. Regras `/api/v1/lancamentos*` e `/api/v1/consolidados*`, mais o prefixo `/v1` reescrito quando o gateway está ligado. Health check: `GET /actuator/health/readiness`, direto no target, sem passar pelo listener. O access log vai para S3 com SSE-S3: o ELB não aceita CMK nesse bucket.
 - O limite rate-based fica **acima** do pico legítimo de um IP. 50 req/s é o pico do serviço, não de um cliente. A ordem de partida é 30.000 requests por IP a cada 5 minutos. O throttle do gateway no GET do consolidado fica acima desses 50 em hml e prod.
 - Shield Standard acompanha o CloudFront. Shield Advanced fica de fora.
 - `/actuator` e o Swagger não são rota do gateway nem do ALB.
@@ -50,6 +50,8 @@ Deployment circuit breaker com rollback ([ADR 0020](../04-adr/0020-estrategia-de
 
 A task de 1 vCPU do consolidado é maior do que o pico de 50 req/s exige (ρ de cerca de 17% com duas tasks). O tamanho existe para caber o sidecar e o JIT. O lançamentos fica em 0,5 vCPU porque o caminho de escrita é mais curto.
 
+A raiz do container é somente leitura. O `/tmp` é um volume do Fargate e nasce como root. O entrypoint da imagem faz `chmod 1777` e desce para o usuário `app`; sem isso o Tomcat não cria o diretório temporário e a task morre no start.
+
 ## 5. Dados
 
 | Recurso | Produção | Papel na falha |
@@ -66,9 +68,9 @@ RPO ≤ 5 min vem do PITR. RTO ≤ 1 h é o tempo de restaurar dentro da região
 
 ## 6. Mensageria e identidade
 
-- SNS, SQS e DLQ com SSE-KMS. Policy: a role de lançamentos publica; a role de consolidado consome. Prefixo `fluxo-caixa-prod-` (e `dev` / `hml` nos outros ambientes). O serviço lê ARN e URL, não o nome.
+- SNS, SQS e DLQ com SSE-KMS. Policy: a role de lançamentos publica; a role de consolidado consome. A policy do tópico não inclui `sns:Unsubscribe`: o SNS rejeita essa action. Prefixo `fluxo-caixa-prod-` (e `dev` / `hml` nos outros ambientes). O serviço lê ARN e URL, não o nome.
 - Cognito User Pool no plano Essentials, resource server `fluxo-caixa`, escopos `lancamentos:write`, `lancamentos:read`, `consolidado:read`. Prefixo de autoridade `fluxo-caixa/`.
-- Pre Token Generation Lambda (v2) insere `comerciante_id`. Sem o claim o serviço responde 401.
+- Pre Token Generation Lambda (v2, plano Essentials) insere `comerciante_id` e os três escopos do resource server no access token. O `InitiateAuth` sozinho não traz escopo customizado; sem o acréscimo o API Gateway responde 403. Sem o claim o serviço responde 401. O domínio hospedado é `fluxo-caixa-<env>-<account_id>`.
 - JWKS buscado pelo serviço. Não há PEM na imagem.
 
 ## 7. Observabilidade na implantação

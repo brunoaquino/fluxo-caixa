@@ -35,7 +35,7 @@ Micrometer + OTel. Log JSON estruturado com `trace_id` e `span_id`. Actuator: li
 
 ## Decisão
 
-Opção 3. Amostragem de trace em produção começa em 10% das requisições normais e 100% dos erros, ajustável por variável. Log em JSON, nível INFO, sem payload de lançamento completo no log (descrição pode ser dado pessoal; o id basta).
+Opção 3. Amostragem de cabeça. Requisição pela borda: decide o API Gateway, com a regra padrão do X-Ray (a primeira requisição de cada segundo e 5% das demais), e os serviços seguem a flag `Sampled` do pai. Trace sem pai: 1.0 em dev, 0.1 em hml e prod, por `MANAGEMENT_TRACING_SAMPLING_PROBABILITY`. Erro não tem retenção garantida: isso pede tail sampling no ADOT, que fica como evolução. O correlation id e o log cobrem o erro não amostrado. Log em JSON, nível INFO, sem payload de lançamento completo no log (descrição pode ser dado pessoal; o id basta).
 
 Métricas de domínio, não só RED: contador de lançamentos por tipo, contador de eventos aplicados, gauge de outbox não publicada, lag de consolidação (instante do evento versus instante da aplicação).
 

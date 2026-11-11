@@ -13,17 +13,18 @@ RUN chmod +x mvnw \
 
 FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
-RUN apk add --no-cache wget \
+RUN apk add --no-cache wget su-exec \
     && addgroup -S app \
     && adduser -S app -G app
 COPY --from=build --chown=app:app /workspace/extracted/dependencies/ ./
 COPY --from=build --chown=app:app /workspace/extracted/spring-boot-loader/ ./
 COPY --from=build --chown=app:app /workspace/extracted/snapshot-dependencies/ ./
 COPY --from=build --chown=app:app /workspace/extracted/application/ ./
-USER app
+# O volume /tmp do Fargate nasce root:root. O entrypoint abre o diretorio e desce para app.
+USER root
 ENV SERVER_PORT=8081 \
     JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75.0 -XX:+UseContainerSupport -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
 EXPOSE 8081
 HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
     CMD wget -q -O - "http://127.0.0.1:${SERVER_PORT}/actuator/health/liveness" >/dev/null || exit 1
-ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
+ENTRYPOINT ["sh", "-c", "chmod 1777 /tmp && exec su-exec app java org.springframework.boot.loader.launch.JarLauncher"]

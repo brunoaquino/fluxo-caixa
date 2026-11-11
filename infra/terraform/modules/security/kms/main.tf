@@ -35,10 +35,6 @@ locals {
       description = "Log groups do CloudWatch."
       extra       = "logs"
     }
-    alb-logs = {
-      description = "Access logs do ALB."
-      extra       = "alb-logs"
-    }
     ecr = {
       description = "Imagens no ECR."
       extra       = "none"
@@ -124,39 +120,6 @@ data "aws_iam_policy_document" "key" {
         test     = "StringEquals"
         variable = "aws:SourceAccount"
         values   = [local.account_id]
-      }
-    }
-  }
-
-  dynamic "statement" {
-    for_each = each.value.extra == "alb-logs" ? [1] : []
-
-    content {
-      sid = "EntregaDeAccessLogs"
-      actions = [
-        "kms:Encrypt",
-        "kms:Decrypt",
-        "kms:ReEncrypt*",
-        "kms:GenerateDataKey*",
-        "kms:DescribeKey",
-      ]
-      resources = ["*"]
-
-      principals {
-        type        = "Service"
-        identifiers = ["logdelivery.elasticloadbalancing.amazonaws.com"]
-      }
-
-      condition {
-        test     = "StringEquals"
-        variable = "aws:SourceAccount"
-        values   = [local.account_id]
-      }
-
-      condition {
-        test     = "ArnLike"
-        variable = "aws:SourceArn"
-        values   = ["arn:aws:elasticloadbalancing:${var.region}:${local.account_id}:loadbalancer/*"]
       }
     }
   }

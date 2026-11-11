@@ -24,6 +24,17 @@ variable "logs_kms_key_arn" {
   type        = string
 }
 
+variable "domain_prefix" {
+  description = "Prefixo do dominio hospedado. Nulo usa <name_prefix>-<account_id>."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.domain_prefix == null || can(regex("^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$", var.domain_prefix))
+    error_message = "domain_prefix usa minusculas, numeros e hifen, com 1 a 63 caracteres."
+  }
+}
+
 variable "callback_urls" {
   description = "Callbacks do app client. O fluxo principal dos servicos e o password grant, mas o client deixa o authorization code preparado."
   type        = list(string)

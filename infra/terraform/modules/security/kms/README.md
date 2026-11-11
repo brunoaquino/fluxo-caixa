@@ -1,6 +1,6 @@
 # kms
 
-CMKs com rotacao anual. Uma chave separa o secret da senha do storage do RDS.
+CMKs com rotacao anual. Nove chaves, iguais em dev, hml e prod: storage e secret de cada RDS, ElastiCache, mensageria, logs, ECR e origin-verify. O access log do ALB usa SSE-S3 e nao tem CMK. Uma chave separa o secret da senha do storage do RDS.
 
 terraform-docs nao estava instalado. Esta pagina lista as variaveis e os outputs do modulo.
 

@@ -12,7 +12,7 @@ ECS permanece enquanto forem dois serviços e um time. EKS passa a valer quando 
 - uma plataforma interna que alguém aceite operar (template, política, GitOps);
 - bin packing ou escala pela fila que o autoscaling do service ECS não expresse sem contorção.
 
-Produção deste projeto em ECS: **USD 777/mês**. O equivalente em EKS, com a mesma rede e os mesmos dados, três nós `m7g.large` e o control plane: **USD 950/mês**. A diferença de USD 173 compra um control plane (USD 73) e nós que ficam folgados para quatro tasks. Não compra capacidade que o Fargate não tenha.
+Produção deste projeto em ECS: **USD 778/mês**. O equivalente em EKS, com a mesma rede e os mesmos dados, três nós `m7g.large` e o control plane: **USD 950/mês**. A diferença de USD 172 compra um control plane (USD 73) e nós que ficam folgados para quatro tasks. Não compra capacidade que o Fargate não tenha.
 
 ## 2. Comparação
 
@@ -27,7 +27,7 @@ Produção deste projeto em ECS: **USD 777/mês**. O equivalente em EKS, com a m
 | Autoscaling da capacidade | a AWS provisiona o Fargate | Cluster Autoscaler ou Karpenter, ou Managed Node Group com tamanho fixo |
 | Mesh | sem uso: os serviços não se chamam | Istio ou Linkerd quando houver chamada síncrona interna |
 | GitOps | push do Actions ([ADR 0028](04-adr/0028-gitops-argocd-evolucao.md)) | ArgoCD em pull |
-| Custo deste porte | USD 87 de Fargate dentro dos USD 777 | USD 73 + USD 179 de nó + USD 7 de disco, no lugar dos USD 87 |
+| Custo deste porte | USD 87 de Fargate dentro dos USD 778 | USD 73 + USD 179 de nó + USD 7 de disco, no lugar dos USD 87 |
 | Falha de zona | task na outra AZ, sem o nó para drenar | o nó da zona sai, o pod reagenda, o volume pode não ir junto |
 
 O que não entra na tabela como vantagem do EKS neste porte: service mesh, porque não há tráfego leste-oeste; Karpenter, porque três nós estáveis não se consolidam; Argo Rollouts, porque o circuit breaker do ECS já cobre o rollback do rolling.

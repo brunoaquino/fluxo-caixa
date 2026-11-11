@@ -40,7 +40,7 @@ O consumidor pede os atributos (`MessageAttributeNames=All`), abre um span `CONS
 
 ## Decisão
 
-Opção 3. Amostragem segue a do ADR 0013 (cabeça no ingress, 10% em produção como ponto de partida). O filho herda a decisão de amostragem do pai: um POST amostrado produz o consumidor amostrado, e um POST não amostrado não acende o consumidor. Amostrar os dois lados de forma independente faria o trace “sumir no meio” justamente nos pedidos que se queria ver.
+Opção 3. Amostragem segue a do ADR 0013 (cabeça no ingress: regra do X-Ray no API Gateway; trace sem pai a 10% em hml e prod). O filho herda a decisão de amostragem do pai: um POST amostrado produz o consumidor amostrado, e um POST não amostrado não acende o consumidor. Amostrar os dois lados de forma independente faria o trace “sumir no meio” justamente nos pedidos que se queria ver.
 
 `comercianteId` é atributo de span e campo de log. Não é label de métrica.
 

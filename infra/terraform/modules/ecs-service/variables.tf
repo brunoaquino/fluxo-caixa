@@ -161,12 +161,6 @@ variable "capacity_provider_strategy" {
   ]
 }
 
-variable "otel_propagators" {
-  description = "Propagadores OpenTelemetry da aplicacao. tracecontext e o W3C. xray cobre o cabecalho do X-Ray."
-  type        = string
-  default     = "tracecontext,baggage,xray"
-}
-
 variable "task_secret_arns" {
   description = "Secrets que a task role le em runtime (AWS JDBC Wrapper). Nao vao para a execution role."
   type        = list(string)

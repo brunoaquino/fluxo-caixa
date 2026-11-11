@@ -37,7 +37,7 @@ A pergunta deixa de ser “onde é mais barato?” e passa a ser “residência 
 | CloudFront HTTPS América do Sul, 10 mil requests | 0,0220 | 0,0220 |
 | EKS control plane, hora | 0,10 | 0,10 |
 
-A produção inteira, mesmas quantidades, fica em **USD 777/mês** na Virgínia e **USD 1.467/mês** em São Paulo (1,89 vez). Os três ambientes 24×7 diferem em **USD 1.098/mês**, cerca de **USD 13,2 mil/ano**. A conta está no [documento 08](../08-custos.md). CloudFront não entra nessa diferença: o comerciante no Brasil é tarifado pelo edge de São Paulo nos dois desenhos. O API Gateway desta revisão usa o mesmo unitário de request nas duas colunas, então também não entra na diferença.
+A produção inteira, mesmas quantidades, fica em **USD 778/mês** na Virgínia e **USD 1.467/mês** em São Paulo (1,89 vez). Os três ambientes 24×7 diferem em **USD 1.098/mês**, cerca de **USD 13,2 mil/ano**. A conta está no [documento 08](../08-custos.md). CloudFront não entra nessa diferença: o comerciante no Brasil é tarifado pelo edge de São Paulo nos dois desenhos. O API Gateway desta revisão usa o mesmo unitário de request nas duas colunas, então também não entra na diferença.
 
 Não há linha de transferência inter-região no total, porque o desenho não replica dado entre regiões. O custo que a decisão compara é o de morar numa região, não o de copiar bytes para a outra.
 

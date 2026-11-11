@@ -2,7 +2,21 @@ data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
 locals {
-  region = data.aws_region.current.region
+  region                     = data.aws_region.current.region
+  resource_server_identifier = "fluxo-caixa"
+  # O pool so tem comerciante. Todo access token recebe os tres escopos.
+  scope_names = [
+    "lancamentos:write",
+    "lancamentos:read",
+    "consolidado:read",
+  ]
+  scope_descriptions = {
+    "lancamentos:write" = "Registrar e estornar lancamentos"
+    "lancamentos:read"  = "Consultar lancamentos"
+    "consolidado:read"  = "Consultar o saldo consolidado"
+  }
+  token_scopes  = [for name in local.scope_names : "${local.resource_server_identifier}/${name}"]
+  domain_prefix = coalesce(var.domain_prefix, "${var.name_prefix}-${data.aws_caller_identity.current.account_id}")
 }
 
 data "archive_file" "pre_token" {
@@ -73,7 +87,7 @@ resource "aws_iam_role_policy" "pre_token" {
 
 resource "aws_lambda_function" "pre_token" {
   function_name = "${var.name_prefix}-pre-token"
-  description   = "Injeta comerciante_id no access token do Cognito (Pre Token Generation v2)."
+  description   = "Pre Token Generation v2: claim comerciante_id e escopos do resource server no access token."
   role          = aws_iam_role.pre_token.arn
   runtime       = "python3.12"
   handler       = "pre_token_generation.handler"
@@ -83,6 +97,12 @@ resource "aws_lambda_function" "pre_token" {
 
   filename         = data.archive_file.pre_token.output_path
   source_code_hash = data.archive_file.pre_token.output_base64sha256
+
+  environment {
+    variables = {
+      TOKEN_SCOPES = join(" ", local.token_scopes)
+    }
+  }
 
   reserved_concurrent_executions = 10
 
@@ -160,24 +180,30 @@ resource "aws_cognito_user_pool" "this" {
   }
 }
 
-resource "aws_cognito_resource_server" "fluxo_caixa" {
-  identifier   = "fluxo-caixa"
-  name         = "fluxo-caixa"
+resource "aws_cognito_user_pool_domain" "this" {
+  domain       = local.domain_prefix
   user_pool_id = aws_cognito_user_pool.this.id
 
-  scope {
-    scope_name        = "lancamentos:write"
-    scope_description = "Registrar e estornar lancamentos"
+  lifecycle {
+    precondition {
+      condition     = can(regex("^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$", local.domain_prefix))
+      error_message = "O prefixo do dominio do Cognito precisa ter 1 a 63 caracteres, com minusculas, numeros e hifen."
+    }
   }
+}
 
-  scope {
-    scope_name        = "lancamentos:read"
-    scope_description = "Consultar lancamentos"
-  }
+resource "aws_cognito_resource_server" "fluxo_caixa" {
+  identifier   = local.resource_server_identifier
+  name         = local.resource_server_identifier
+  user_pool_id = aws_cognito_user_pool.this.id
 
-  scope {
-    scope_name        = "consolidado:read"
-    scope_description = "Consultar o saldo consolidado"
+  dynamic "scope" {
+    for_each = local.scope_names
+
+    content {
+      scope_name        = scope.value
+      scope_description = local.scope_descriptions[scope.value]
+    }
   }
 }
 
@@ -197,15 +223,10 @@ resource "aws_cognito_user_pool_client" "app" {
 
   allowed_oauth_flows_user_pool_client = true
   allowed_oauth_flows                  = ["code"]
-  allowed_oauth_scopes = [
-    "openid",
-    "fluxo-caixa/lancamentos:write",
-    "fluxo-caixa/lancamentos:read",
-    "fluxo-caixa/consolidado:read",
-  ]
-  supported_identity_providers = ["COGNITO"]
-  callback_urls                = var.callback_urls
-  logout_urls                  = var.logout_urls
+  allowed_oauth_scopes                 = concat(["openid"], local.token_scopes)
+  supported_identity_providers         = ["COGNITO"]
+  callback_urls                        = var.callback_urls
+  logout_urls                          = var.logout_urls
 
   access_token_validity  = 60
   id_token_validity      = 60

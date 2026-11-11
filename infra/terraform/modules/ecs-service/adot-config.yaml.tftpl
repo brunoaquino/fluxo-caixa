@@ -1,5 +1,5 @@
-# A aplicacao extrai e injeta tracecontext (W3C) e xray via OTEL_PROPAGATORS.
-# O exporter awsxray entrega esse trace ao X-Ray.
+# A aplicacao extrai X-Amzn-Trace-Id e traceparent no processo Java.
+# O exporter awsxray entrega esse trace ao X-Ray. Métricas OTLP viram EMF.
 extensions:
   health_check:
     endpoint: 0.0.0.0:13133

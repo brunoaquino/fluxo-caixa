@@ -8,6 +8,13 @@ locals {
 
   access_logs_bucket_name = "${local.name_prefix}-alb-logs-${data.aws_caller_identity.current.account_id}"
 
+  # Probabilidade só quando o trace não tem pai. O header X-Ray Sampled continua mandando.
+  tracing_sampling_probability = {
+    dev  = "1.0"
+    hml  = "0.1"
+    prod = "0.1"
+  }[var.environment]
+
   # Defaults da secao 15. O tfvars do ambiente repete estes numeros para deixar o contrato visivel.
   defaults = {
     dev = {

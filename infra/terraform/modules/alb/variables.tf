@@ -29,11 +29,6 @@ variable "access_logs_bucket_name" {
   type        = string
 }
 
-variable "logs_kms_key_arn" {
-  description = "CMK dos access logs. A key policy precisa autorizar logdelivery.elasticloadbalancing.amazonaws.com."
-  type        = string
-}
-
 variable "access_log_expiration_days" {
   description = "Dias ate expirar o access log."
   type        = number

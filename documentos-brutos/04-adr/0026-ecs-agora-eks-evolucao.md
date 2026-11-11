@@ -21,7 +21,7 @@ O ADR 0009 colocou os dois serviços em ECS Fargate. A pergunta volta porque a c
 |---|---|---|
 | Control plane | incluso no preço da task | USD 73/mês por cluster, mesmo vazio |
 | Onde o processo roda | task, sem nó | nó (ou Fargate profile, que devolve o preço de Fargate e tira o bin packing) |
-| Produção deste projeto | USD 777/mês na conta base | USD 950/mês com 3 × `m7g.large`, mesma rede e mesmos dados ([custos](../08-custos.md)) |
+| Produção deste projeto | USD 778/mês na conta base | USD 950/mês com 3 × `m7g.large`, mesma rede e mesmos dados ([custos](../08-custos.md)) |
 | Operação | service, task definition, target group | nó, NodePool, add-on, versão do control plane, upgrade com extended support se atrasar |
 | Curva | o time que já escreve o Terraform de ECS opera o deploy | pede quem já operou Kubernetes, ou tempo para aprender no sistema de caixa |
 | Ecossistema | o da AWS (autoscaling de service, circuit breaker de deploy) | o da CNCF, listado no [documento 13](../13-ecs-vs-eks.md) |
@@ -68,7 +68,7 @@ Até o gatilho, não se cria “um EKS pequeno para ir aprendendo” em prod. Ap
 
 ### Positivas
 
-- A decisão de hoje tem preço (USD 777 contra USD 950) e um número de serviços que a reabre.
+- A decisão de hoje tem preço (USD 778 contra USD 950) e um número de serviços que a reabre.
 - A stack open source fica especificada antes de alguém instalar o chart da moda. Especificada não é instalada.
 
 ### Negativas

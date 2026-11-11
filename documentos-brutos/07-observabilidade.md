@@ -8,7 +8,7 @@ Log JSON. Sem descrição de lançamento, sem valor em INFO, sem token, sem `Aut
 
 Dois mecanismos, os dois obrigatórios.
 
-**W3C Trace Context.** Headers `traceparent` e `tracestate`, na entrada e na saída, via Micrometer Tracing com a ponte OpenTelemetry. Um `traceparent` válido é `00-{trace-id de 32 hex}-{parent-id de 16 hex}-{flags}`. Flags `01` significa amostrado. O serviço continua o trace que chegou. Se não chegou, abre um trace novo.
+**W3C Trace Context e X-Ray.** `traceparent` / `tracestate` e `X-Amzn-Trace-Id`, na entrada e na saída, via Micrometer Tracing com a ponte OpenTelemetry. O Boot 4.0 só conhece W3C e B3 em `management.tracing.propagation.type`; um bean `TextMapPropagator` acrescenta o propagador X-Ray da AWS sem tirar o W3C. O `OTEL_PROPAGATORS` do processo Java não entra nessa decisão. Um `traceparent` válido é `00-{trace-id de 32 hex}-{parent-id de 16 hex}-{flags}`. Flags `01` significa amostrado. O header do API Gateway `Root=1-{8 hex}-{24 hex}` vira o mesmo trace id de 32 hex. Se os dois headers chegam, o X-Ray vence. Se não chegou nenhum, o serviço abre um trace novo. A flag `Sampled` do pai remoto manda; `management.tracing.sampling.probability` só decide trace sem pai (1.0 no local e no dev, 0.1 em hml e prod).
 
 **`X-Correlation-Id`.** Se o request trouxer um UUID, esse é o `correlationId`. Se vier ausente, vazio ou com outro formato, o serviço gera um UUID. A resposta devolve o mesmo header, inclusive no 4xx e no 5xx. O MDC leva o campo `correlationId`. O cliente de caixa guarda esse valor. Ele não precisa saber W3C.
 
@@ -63,9 +63,9 @@ O perfil `local` e o `aws` do lançamentos exportam OTLP de trace para `${OTEL_E
 
 ![Sequência da propagação do trace: o POST grava trace_parent na outbox, o relay cria o span PRODUCER e publica no SNS com traceparent, e o consumidor cria o span CONSUMER filho do produtor](assets/diagramas/d25-seq-trace-mensageria.svg)
 
-O relay não herda o MDC da thread do POST. A thread do agendador não tem esse contexto. A fonte é a coluna. Publicar “o trace de agora” abriria um trace órfão, filho de ninguém, e o exemplo da seção 2 não fecharia.
+O relay não herda o MDC da thread do POST. A thread do agendador não tem esse contexto. A fonte é a coluna. Publicar “o trace de agora” abriria um trace órfão, filho de ninguém, e o exemplo da seção 2 não fecharia. A task agendada não abre span: execução vazia, a cada meio segundo, não vira trace. O span `PRODUCER` só nasce quando há evento para publicar, já com o contexto restaurado da coluna. `/actuator/health` e as observações `spring.security.*` ficam fora do tracing. Sem o span HTTP, autorização e filtro viravam trace raiz a cada health check.
 
-Atributos SNS, tipo `String`, repassados pelo raw delivery: `eventType`, `traceparent`, `tracestate` quando existir, `correlationId`. O JSON do evento não ganha esses campos.
+Atributos SNS, tipo `String`, repassados pelo raw delivery: `eventType`, `traceparent`, `tracestate` quando existir, `correlationId` e `X-Amzn-Trace-Id`. O JSON do evento não ganha esses campos.
 
 Spans: kind `PRODUCER` no publish, kind `CONSUMER` no receive. Nome estável (`lancamento publish`, `lancamento process`) para o Tempo e o X-Ray agruparem. Atributos de span: `eventId`, `lancamentoId`, `comercianteId`, `messaging.system=aws_sqs` no consumidor e `aws_sns` no produtor. Sem o valor do lançamento e sem a descrição.
 

@@ -31,6 +31,8 @@ class SelecaoDeConexaoTest {
         assertThat(pool.getMaxLifetime()).isLessThan(java.time.Duration.ofDays(30).toMillis());
         assertThat(pool.getDataSourceProperties().getProperty("wrapperPlugins")).isEqualTo(SelecaoDeConexao.PLUGINS_INSTANCIA);
         assertThat(pool.getDataSourceProperties().getProperty("secretsManagerSecretId")).contains("rds");
+        assertThat(pool.getDataSourceProperties().getProperty("connectTimeout")).isEqualTo("3000");
+        assertThat(pool.getDataSourceProperties().getProperty("socketTimeout")).isEqualTo("5000");
         assertThat(pool.getConnectionInitSql()).contains("statement_timeout");
     }
 
@@ -53,6 +55,8 @@ class SelecaoDeConexaoTest {
         assertThat(pool.getJdbcUrl()).startsWith("jdbc:postgresql:");
         assertThat(pool.getUsername()).isEqualTo("lancamentos");
         assertThat(pool.getDataSourceProperties()).doesNotContainKey("wrapperPlugins");
+        assertThat(pool.getDataSourceProperties().getProperty("connectTimeout")).isEqualTo("3");
+        assertThat(pool.getDataSourceProperties().getProperty("socketTimeout")).isEqualTo("5");
     }
 
     @Test

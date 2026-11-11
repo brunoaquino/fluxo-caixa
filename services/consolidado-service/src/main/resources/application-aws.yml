@@ -14,3 +14,9 @@ springdoc:
     enabled: false
   swagger-ui:
     enabled: false
+
+management:
+  otlp:
+    metrics:
+      export:
+        enabled: true

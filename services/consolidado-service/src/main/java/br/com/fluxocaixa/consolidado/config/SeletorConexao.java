@@ -38,8 +38,16 @@ public final class SeletorConexao {
         config.setKeepaliveTime(pedido.pool().keepaliveTimeMs());
         config.setConnectionInitSql(pedido.pool().connectionInitSql());
         config.setReadOnly(pedido.somenteLeitura());
-        config.addDataSourceProperty("connectTimeout", "3");
-        config.addDataSourceProperty("socketTimeout", "5");
+        // pgjdbc aceita esses nomes em segundos. O wrapper da AWS lê os mesmos
+        // nomes em milissegundos e trunca para segundos ao repassar ao driver:
+        // 3 ms vira 0 e o timeout fica desligado. 3000 ms viram 3 s.
+        if (pedido.usaSegredo()) {
+            config.addDataSourceProperty("connectTimeout", "3000");
+            config.addDataSourceProperty("socketTimeout", "5000");
+        } else {
+            config.addDataSourceProperty("connectTimeout", "3");
+            config.addDataSourceProperty("socketTimeout", "5");
+        }
         if (pedido.usaSegredo()) {
             String urlWrapper = normalizar(pedido.url(), true);
             config.setJdbcUrl(urlWrapper);

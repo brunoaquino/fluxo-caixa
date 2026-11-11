@@ -103,11 +103,11 @@ Threads virtuais e shutdown gracioso ficam ligados em qualquer profile.
 
 ## Rastreabilidade
 
-- Propagação W3C (`traceparent` / `tracestate`) na entrada HTTP.
+- Propagação W3C (`traceparent` / `tracestate`) e `X-Amzn-Trace-Id` na entrada HTTP. O Boot não lê `OTEL_PROPAGATORS`; o bean compõe os dois. A flag `Sampled` do pai manda.
 - Header `X-Correlation-Id`: UUID. Se vier ausente ou inválido, o serviço gera outro, devolve no response e grava no MDC como `correlationId`.
 - Log JSON de console com `traceId`, `spanId`, `correlationId` e, quando a operação tem, `comercianteId`, `lancamentoId` e `eventId`.
 - O POST e o estorno gravam `trace_parent`, `trace_state` e `correlation_id` na `outbox_eventos`.
-- O relay abre um span `PRODUCER` filho desse contexto e publica os message attributes `eventType`, `traceparent`, `tracestate` (se houver) e `correlationId`. O JSON do evento não muda.
+- O relay não abre span quando a outbox está vazia. Com evento, abre um span `PRODUCER` filho do contexto gravado e publica os message attributes `eventType`, `traceparent`, `tracestate` (se houver), `correlationId` e `X-Amzn-Trace-Id`. O JSON do evento não muda.
 
 ## Resiliência da publicação SNS
 

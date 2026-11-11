@@ -1,6 +1,6 @@
 # cognito
 
-User pool, resource server fluxo-caixa e Lambda de pre-token.
+User pool Essentials, dominio hospedado, resource server fluxo-caixa e Lambda de pre-token v2. A Lambda copia `comerciante_id` e acrescenta os escopos recebidos em `TOKEN_SCOPES`, para o `USER_PASSWORD_AUTH` passar no authorizer.
 
 terraform-docs nao estava instalado. Esta pagina lista as variaveis e os outputs do modulo.
 
@@ -20,6 +20,7 @@ module "cognito" {
 | `deletion_protection` | `string` | ACTIVE em prod, INACTIVE em dev. |
 | `log_retention_days` | `number` | Retencao do log da Lambda de pre-token. |
 | `logs_kms_key_arn` | `string` | CMK do log group da Lambda. |
+| `domain_prefix` | `string` | Prefixo do dominio hospedado. Nulo usa `<name_prefix>-<account_id>`. |
 | `callback_urls` | `list(string)` | Callbacks do app client. O fluxo principal dos servicos e o password grant, mas o client deixa o authorization code preparado. |
 | `logout_urls` | `list(string)` | URLs de logout do app client. |
 
@@ -32,3 +33,5 @@ module "cognito" {
 | `user_pool_client_id` | App client publico do comerciante. |
 | `issuer_uri` | JWT_ISSUER_URI. O prefixo de escopo na AWS e fluxo-caixa/. |
 | `resource_server_identifier` | Identificador do resource server. |
+| `domain` | Prefixo do dominio hospedado. |
+| `token_endpoint` | Token endpoint OAuth desse dominio. |

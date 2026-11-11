@@ -61,6 +61,7 @@ public class SnsPublicador {
             adicionar(atributos, "traceparent", rastreio.traceParent());
             adicionar(atributos, "tracestate", rastreio.traceState());
             adicionar(atributos, "correlationId", rastreio.correlationId());
+            adicionar(atributos, "X-Amzn-Trace-Id", rastreio.xrayTraceId());
         }
         return atributos;
     }

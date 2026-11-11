@@ -12,7 +12,7 @@ Estimativa de **10 de novembro de 2026** para os três ambientes do [blueprint, 
 
 O pico de 50 req/s não domina o custo. Em produção, 27 endpoints de interface (9 serviços × 3 zonas) custam mais do que as quatro tasks Fargate, e dois RDS `db.t4g.medium` Multi-AZ custam mais do que a borda inteira. CloudFront, neste volume, é uma linha pequena: o ganho dele é TLS no edge e WAF, não desconto de request.
 
-A mesma produção em São Paulo sai **1,89 vez** a de Virgínia (USD 1.466,93 / USD 777,35). O grosso está em NAT, endpoint, RDS e Fargate. CloudFront cobra pelo edge que atende o comerciante (América do Sul), não pela região da origem: mudar o ALB para `us-east-1` não aumenta essa linha. O API Gateway desta conta usa o unitário de request de `us-east-1` nas duas colunas.
+A mesma produção em São Paulo sai **1,89 vez** a de Virgínia (USD 1.467,93 / USD 778,35). O grosso está em NAT, endpoint, RDS e Fargate. CloudFront cobra pelo edge que atende o comerciante (América do Sul), não pela região da origem: mudar o ALB para `us-east-1` não aumenta essa linha. O API Gateway desta conta usa o unitário de request de `us-east-1` nas duas colunas.
 
 Réplica de leitura e RDS Proxy ficam **fora** do total. O blueprint deixa os dois desligados. Ligá-los soma as linhas da seção 7.
 
@@ -35,7 +35,7 @@ Ambiente diário do desenvolvedor: Docker local, **USD 0**. A linha “dev” é
 | NAT, dados | 40 GB (sem endpoint: pull de imagem, log, API) | 10 GB residual | 20 GB residual |
 | Endpoint, dados | 0 | 30 GB | 50 GB |
 | Segredos | 2 (um RDS por serviço) | 2 | 2 |
-| CMK | 4 | 5 | 7 |
+| CMK | 9 | 9 | 9 |
 | Réplica / Proxy | não | não | não, no total-base |
 
 Os nove endpoints são `ecr.api`, `ecr.dkr`, `logs`, `sqs`, `sns`, `secretsmanager`, `sts`, `kms` e `xray`. A lista mínima do blueprint (seção 12) não cita KMS nem X-Ray. Os dois entram para a CMK e o sidecar ADOT não voltarem pelo NAT. S3 é gateway, sem hora. O agente de integração confere se o Terraform criou os nove.
@@ -75,7 +75,7 @@ WAF de escopo CloudFront (lista pública, igual nas duas regiões): USD 5 por We
 
 Secrets Manager: USD 0,40 por segredo/mês. Três segredos (duas senhas de RDS e o header `X-Origin-Verify`) = USD 1,20. As chamadas `GetSecretValue` deste volume ficam abaixo de um centavo (USD 0,05 por 10 mil). A Lambda de rotação do header roda uma vez por período e fica abaixo de um centavo.
 
-KMS: USD 1 por CMK/mês. As chamadas deste volume ficam abaixo de USD 1 e estão absorvidas na linha residual, não somadas de novo.
+KMS: USD 1 por CMK/mês. O módulo cria as mesmas nove nos três ambientes (storage e secret de cada RDS, ElastiCache, mensageria, logs, ECR e `origin-verify`), então a linha é USD 9. O access log do ALB usa SSE-S3: o ELB não grava nesse bucket com CMK, e não existe chave `alb-logs`. As chamadas deste volume ficam abaixo de USD 1 e estão absorvidas na linha residual, não somadas de novo.
 
 ## 4. Três ambientes em us-east-1
 
@@ -98,14 +98,14 @@ Cada linha é o produto arredondado a centavo. O total é a soma das linhas arre
 | Mensageria (estimativa) | 0,50 | 1,50 | 4,00 |
 | Observabilidade (estimativa) | 8,00 | 20,00 | 45,00 |
 | Secrets Manager | 1,20 | 1,20 | 1,20 |
-| KMS | 5,00 | 6,00 | 8,00 |
+| KMS | 9,00 | 9,00 | 9,00 |
 | ECR | 0,50 | 0,50 | 1,00 |
 | Transferência residual (estimativa) | 2,00 | 3,00 | 8,00 |
-| **Total** | **143,07** | **355,69** | **777,35** |
+| **Total** | **147,07** | **358,69** | **778,35** |
 
-**Dev USD 143/mês** (R$ 815). **Hml USD 356/mês** (R$ 2.029). **Prod USD 777/mês** (R$ 4.429).
+**Dev USD 147/mês** (R$ 838). **Hml USD 359/mês** (R$ 2.046). **Prod USD 778/mês** (R$ 4.435).
 
-Os três ligados 24×7: **USD 1.276,11/mês**, **USD 15.313,32/ano**, cerca de **R$ 87.286/ano**.
+Os três ligados 24×7: **USD 1.284,11/mês**, **USD 15.409,32/ano**, cerca de **R$ 87.833/ano**.
 
 Fórmulas de produção que ancoram o resto:
 
@@ -117,7 +117,7 @@ Fórmulas de produção que ancoram o resto:
 - API Gateway REST: 5.000.000 × 3,50 / 1.000.000 = 17,50. A HTTP API, na mesma premissa, seria 5,00. A diferença é 12,50.
 - WAF regional: 5 de Web ACL + 5 regras × 1 + 5 × 0,60 = 13,00. As regras são o header `X-Origin-Verify` e quatro managed rules (Common, Known Bad Inputs, SQLi, IP Reputation).
 
-A premissa de volume é a mesma da linha de CloudFront: **0,2 milhão** de requests em dev, **1 milhão** em hml e **5 milhões** em prod. REST API em `us-east-1`: USD 3,50 por milhão. HTTP API: USD 1,00 por milhão. Dev: 0,70 contra 0,20. Hml: 3,50 contra 1,00. O WAF regional usa a mesma lista do WAF de borda (USD 5 por ACL, USD 1 por regra, USD 0,60 por milhão): piso de USD 10 mais o request. Segredo extra do header: USD 0,40, então a linha de Secrets sobe de 0,80 para 1,20. CMK própria: USD 1, e a linha de KMS sobe um dólar em cada ambiente. Lambda de rotação: uma invocação por período, abaixo de um centavo, sem linha. VPC Link v2 não tem hora nesta conta; o NLB que ele evita teria hora e NLCU.
+A premissa de volume é a mesma da linha de CloudFront: **0,2 milhão** de requests em dev, **1 milhão** em hml e **5 milhões** em prod. REST API em `us-east-1`: USD 3,50 por milhão. HTTP API: USD 1,00 por milhão. Dev: 0,70 contra 0,20. Hml: 3,50 contra 1,00. O WAF regional usa a mesma lista do WAF de borda (USD 5 por ACL, USD 1 por regra, USD 0,60 por milhão): piso de USD 10 mais o request. Segredo extra do header: USD 0,40, então a linha de Secrets sobe de 0,80 para 1,20. A CMK `origin-verify` já está nas nove da linha de KMS (USD 9), não é um dólar por cima de outra contagem. Lambda de rotação: uma invocação por período, abaixo de um centavo, sem linha. VPC Link v2 não tem hora nesta conta; o NLB que ele evita teria hora e NLCU.
 
 | | dev | hml | prod |
 |---|---:|---:|---:|
@@ -127,7 +127,9 @@ A premissa de volume é a mesma da linha de CloudFront: **0,2 milhão** de reque
 
 HTTP API passa a ser a melhor escolha quando não houver usage plan, validator, canary nem mTLS de parceiro, e o volume subir o bastante para os USD 2,50 por milhão pesarem. Não é este contrato. O [ADR 0031](04-adr/0031-api-gateway-rest-regional.md) registra o trade-off.
 
-Mensageria, observabilidade e transferência residual são ordem de grandeza. Dois milhões de eventos por mês ficam abaixo de USD 10 mesmo com o request regional mais caro; a linha de USD 4 não muda a decisão. Observabilidade de produção junta log com retenção de 30 dias, Container Insights enhanced, X-Ray com amostragem de 10% e alarmes. Se o log passar de dezenas de GB, a linha cresce a USD 0,50/GB de ingestão em `us-east-1` (preço de lista público, não reconsultado na API nesta passagem) e o gatilho de [observabilidade](13-ecs-vs-eks.md) passa a valer.
+Mensageria, observabilidade e transferência residual são ordem de grandeza. Dois milhões de eventos por mês ficam abaixo de USD 10 mesmo com o request regional mais caro; a linha de USD 4 não muda a decisão. Observabilidade de produção junta log com retenção de 30 dias, Container Insights enhanced, X-Ray e alarmes.
+
+X-Ray, lista pública não reconsultada nesta passagem: **USD 5 por milhão de traces gravados**. Um POST é um trace (API Gateway, lançamentos, relay e consolidado compartilham o id). Health e o relay sem evento não abrem trace. Quem decide na borda é o API Gateway, com a regra padrão do X-Ray: a primeira requisição de cada segundo e 5% das demais. Trace sem pai usa 1.0 em dev e 0.1 em hml e prod. Sobre o volume da linha de CloudFront, concentrado em cerca de 10 horas úteis por dia: dev grava praticamente tudo, **0,2 milhão** (USD 1,00); hml fica abaixo de 1 requisição por segundo e também grava quase tudo, cerca de **0,9 milhão** (USD 4,50); prod, com média de 4 a 5 requisições por segundo nas horas úteis, grava cerca de **1,3 milhão** (USD 6,50). Esse valor já cabe na linha de observabilidade (8 / 20 / 45). O total da seção 4 não muda. A mesma lista vale nas duas regiões. Se o log passar de dezenas de GB, a linha cresce a USD 0,50/GB de ingestão em `us-east-1` (preço de lista público, não reconsultado na API nesta passagem) e o gatilho de [observabilidade](13-ecs-vs-eks.md) passa a valer.
 
 Backup de RDS dentro de 100% do armazenamento provisionado não foi somado de novo. Performance Insights de 7 dias fica na franquia. Cognito Essentials com 1.000 MAU e a Lambda de pre-token ficam na franquia (USD 0).
 
@@ -152,22 +154,22 @@ Mesmas quantidades, preços da coluna `sa-east-1`. WAF e CloudFront não mudam: 
 | Mensageria (estimativa) | 1,00 | 3,00 | 8,00 |
 | Observabilidade (estimativa) | 12,00 | 28,00 | 60,00 |
 | Secrets Manager | 1,20 | 1,20 | 1,20 |
-| KMS | 5,00 | 6,00 | 8,00 |
+| KMS | 9,00 | 9,00 | 9,00 |
 | ECR | 0,50 | 0,50 | 1,00 |
 | Transferência residual (estimativa) | 4,00 | 6,00 | 15,00 |
-| **Total** | **244,14** | **663,44** | **1.466,93** |
+| **Total** | **248,14** | **666,44** | **1.467,93** |
 
 O request da REST API nesta coluna usa o unitário de `us-east-1` (USD 3,50 por milhão). Esta passagem não reconsultou o Price List de `sa-east-1` para o API Gateway. WAF, segredo e CMK seguem a mesma lista já usada nas duas regiões. Se o request em São Paulo for mais caro, a linha sobe e o ADR 0021 continua sendo o lugar dessa conta.
 
 | Ambiente | us-east-1 | sa-east-1 | Diferença | sa / us |
 |---|---:|---:|---:|---:|
-| dev | 143,07 | 244,14 | +101,07 | 1,71 (+71%) |
-| hml | 355,69 | 663,44 | +307,75 | 1,87 (+87%) |
-| prod | 777,35 | 1.466,93 | +689,58 | 1,89 (+89%) |
-| Soma 24×7 | 1.276,11 | 2.374,51 | +1.098,40 | 1,86 |
-| Ano | 15.313,32 | 28.494,12 | +13.180,80 | 1,86 |
+| dev | 147,07 | 248,14 | +101,07 | 1,69 (+69%) |
+| hml | 358,69 | 666,44 | +307,75 | 1,86 (+86%) |
+| prod | 778,35 | 1.467,93 | +689,58 | 1,89 (+89%) |
+| Soma 24×7 | 1.284,11 | 2.382,51 | +1.098,40 | 1,86 |
+| Ano | 15.409,32 | 28.590,12 | +13.180,80 | 1,86 |
 
-O ano em São Paulo seria cerca de **R$ 162.416**. A diferença anual de **USD 13.181** (R$ 75.130) é o preço de manter o dado no Brasil com esta topologia. O [ADR 0021](04-adr/0021-regiao-us-east-1.md) registra por que a transferência internacional com salvaguarda foi aceita, e o que se refaz se um contrato exigir residência.
+O ano em São Paulo seria cerca de **R$ 162.964**. A diferença anual de **USD 13.181** (R$ 75.130) é o preço de manter o dado no Brasil com esta topologia. O [ADR 0021](04-adr/0021-regiao-us-east-1.md) registra por que a transferência internacional com salvaguarda foi aceita, e o que se refaz se um contrato exigir residência.
 
 Não há transferência inter-região nesta conta: nada replica de Virgínia para São Paulo. O preço de saída entre regiões não entra no total. O que a decisão compara é o preço de **morar** em cada região.
 
@@ -181,7 +183,7 @@ Não há transferência inter-região nesta conta: nada replica de Virgínia par
 | Borda (ALB + WAF CloudFront + CloudFront + REST API + WAF regional) | 77,87 | 10% |
 | ElastiCache | 37,38 | 5% |
 | Observabilidade estimada | 45,00 | 6% |
-| O resto | 22,70 | 3% |
+| O resto | 23,70 | 3% |
 
 A alavanca continua sendo rede e classe de banco. O request do pico cabe na linha da REST API (USD 17,50 em cinco milhões) e não muda essa ordem.
 
@@ -204,18 +206,18 @@ Troca só a computação. O resto da tabela de produção permanece (RDS, NAT, e
 
 | Linha | USD/mês |
 |---|---:|
-| Produção ECS, base | 777,35 |
+| Produção ECS, base | 778,35 |
 | Menos Fargate | −86,51 |
 | Control plane EKS, 0,10 × 730 | 73,00 |
 | 3 × `m7g.large` on-demand, 3 × 0,0816 × 730 | 178,70 |
 | EBS gp3, 3 × 30 GB × 0,08 | 7,20 |
-| **EKS com a mesma observabilidade gerenciada** | **949,74** |
+| **EKS com a mesma observabilidade gerenciada** | **950,74** |
 
 O EBS gp3 a USD 0,08/GB-mês é preço de lista público de `us-east-1`, não reconsultado na API nesta passagem.
 
 Três nós `m7g.large` (2 vCPU, 8 GiB) cabem as quatro tasks de hoje mais o sidecar e os DaemonSets, um nó por AZ. É o mínimo honesto de N−1. Karpenter não reduz essa conta: com três nós estáveis não há o que consolidar. O critério e a stack estão no [documento 13](13-ecs-vs-eks.md).
 
-Stack open source no lugar dos USD 45 de CloudWatch/X-Ray: mais 2 × `m7g.large` (119,14) + 200 GB gp3 (16,00) + 50 GB S3 (1,15, a USD 0,023/GB de lista). Sobe **USD 136,29** e tira os 45. Total **USD 1.041,03/mês** de infra, antes de gente. O control plane em São Paulo também é USD 0,10/hora; o que encarece o EKS lá é o nó, não o control plane.
+Stack open source no lugar dos USD 45 de CloudWatch/X-Ray: mais 2 × `m7g.large` (119,14) + 200 GB gp3 (16,00) + 50 GB S3 (1,15, a USD 0,023/GB de lista). Sobe **USD 136,29** e tira os 45. Total **USD 1.042,03/mês** de infra, antes de gente. O control plane em São Paulo também é USD 0,10/hora; o que encarece o EKS lá é o nó, não o control plane.
 
 Três clusters (dev, hml, prod) seriam 3 × 73 = USD 219 só de control plane, mais nós. O cenário acima é um cluster de produção. Dev e hml continuam em ECS no desenho de custo, que é o que o [ADR 0026](04-adr/0026-ecs-agora-eks-evolucao.md) decide.
 

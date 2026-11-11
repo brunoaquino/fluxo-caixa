@@ -21,8 +21,7 @@ module "alb" {
 | `subnet_ids` | `list(string)` | Subnets privadas do ALB interno, uma por AZ. O CloudFront chega por VPC Origin. |
 | `enable_waf` | `bool` | WAF regional no ALB. Padrao false: o ALB e interno e o WAF de borda (escopo CLOUDFRONT) ja inspeciona o cliente. Um WAF regional veria so o IP do CloudFront e cobraria de novo. |
 | `deletion_protection` | `bool` | Protege o ALB contra delete. true em prod. |
-| `access_logs_bucket_name` | `string` | Nome globalmente unico do bucket de access logs. |
-| `logs_kms_key_arn` | `string` | CMK dos access logs. A key policy precisa autorizar logdelivery.elasticloadbalancing.amazonaws.com. |
+| `access_logs_bucket_name` | `string` | Nome globalmente unico do bucket de access logs. O bucket usa SSE-S3: o ALB nao grava em bucket com CMK. |
 | `access_log_expiration_days` | `number` | Dias ate expirar o access log. |
 | `waf_rate_limit` | `number` | Requisicoes por IP em 5 minutos. 50 req/s sustentados geram 15000, entao o teto fica acima disso. |
 | `services` | `map(object({` | Target groups e regras de caminho. |

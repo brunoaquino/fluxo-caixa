@@ -22,3 +22,13 @@ output "resource_server_identifier" {
   description = "Identificador do resource server."
   value       = aws_cognito_resource_server.fluxo_caixa.identifier
 }
+
+output "domain" {
+  description = "Prefixo do dominio hospedado do Cognito."
+  value       = aws_cognito_user_pool_domain.this.domain
+}
+
+output "token_endpoint" {
+  description = "Token endpoint OAuth do dominio hospedado."
+  value       = "https://${aws_cognito_user_pool_domain.this.domain}.auth.${local.region}.amazoncognito.com/oauth2/token"
+}

@@ -199,7 +199,7 @@ Metas herdadas do blueprint e tornadas mensuráveis. O detalhamento de SLI, erro
 | RNF-11 | Segurança | OAuth2/OIDC, escopo, tenant no token, TLS, criptografia em repouso | [06](06-seguranca.md) |
 | RNF-12 | Observabilidade | Trace único atravessando HTTP, outbox e SQS; alarme de DLQ e de lag | [07](07-observabilidade.md) |
 | RNF-13 | Manutenibilidade | Domínio sem framework; ArchUnit; API `/api/v1`; evento com `eventVersion` | [ADR 0008](04-adr/0008-arquitetura-hexagonal.md), [ADR 0017](04-adr/0017-api-rest-versionada-rfc9457.md) |
-| RNF-14 | Custo | Produção enxuta para o volume real, região `us-east-1` | [08](08-custos.md): cerca de USD 777/mês em prod |
+| RNF-14 | Custo | Produção enxuta para o volume real, região `us-east-1` | [08](08-custos.md): cerca de USD 778/mês em prod |
 | RNF-15 | LGPD | Transferência internacional com salvaguarda, minimização, trilha imutável | [ADR 0021](04-adr/0021-regiao-us-east-1.md) |
 | RNF-16 | Escalabilidade | Horizontal, no mínimo 2 tasks em AZs distintas, auto scaling por CPU e requisições | [05](05-requisitos-nao-funcionais.md) |
 

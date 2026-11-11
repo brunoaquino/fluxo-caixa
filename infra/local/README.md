@@ -53,7 +53,7 @@ O script de init do Postgres roda só na primeira subida do volume. Para recriar
 
 ## Trace e correlation id no Grafana
 
-Os serviços exportam trace OTLP para o `otel-lgtm` (Tempo) com `OTEL_PROPAGATORS=tracecontext,baggage`. O header `X-Correlation-Id` é da aplicação: volta na resposta e entra no log JSON como `correlationId`, junto com `traceId` e `spanId`.
+Os serviços exportam trace OTLP para o `otel-lgtm` (Tempo). O propagador é o bean da aplicação (W3C e, se o header existir, X-Ray); o Boot não lê `OTEL_PROPAGATORS`. O header `X-Correlation-Id` é da aplicação: volta na resposta e entra no log JSON como `correlationId`, junto com `traceId` e `spanId`.
 
 O Alloy lê o stdout dos containers pelo socket do Docker e entrega no Loki do `otel-lgtm` (`http://otel-lgtm:3100`). No Grafana (`http://localhost:3000`, `admin`/`admin`):
 

@@ -77,8 +77,10 @@ management:
     env:
       enabled: true
   tracing:
+    # Probabilidade só do trace sem pai. Pai remoto (X-Ray Sampled ou traceparent) manda.
+    # Dev e local ficam em 1.0. Hml e prod recebem MANAGEMENT_TRACING_SAMPLING_PROBABILITY.
     sampling:
-      probability: 1.0
+      probability: ${MANAGEMENT_TRACING_SAMPLING_PROBABILITY:1.0}
     propagation:
       type: w3c
   opentelemetry:

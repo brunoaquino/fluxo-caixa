@@ -72,9 +72,10 @@ Validação de entrada: tipo fechado, valor com no máximo duas casas e positivo
 | Segredos | SDK sobre TLS | Secrets Manager, KMS |
 | Backup RDS | Canal da AWS | Mesma chave, `us-east-1`. Sem cópia para `sa-east-1` |
 | Imagem ECR | HTTPS | Criptografia do ECR |
+| Access log do ALB | Entrega do ELB na VPC | SSE-S3. O ELB não grava nesse bucket com CMK |
 | Disco local do desenvolvedor | — | Fora do escopo; não se copia base de produção para o notebook |
 
-Chaves gerenciadas pelo cliente (CMK) para RDS, mensageria e segredos, com rotação anual habilitada. Chave AWS-managed é aceitável como passo intermediário do dev; produção usa CMK para podermos desligar o acesso por IAM sem depender da chave compartilhada da conta inteira.
+Nove CMKs em cada ambiente (storage e secret de cada RDS, ElastiCache, mensageria, logs, ECR e o header `X-Origin-Verify`), com rotação anual. O access log do ALB é a exceção: SSE-S3, porque o ELB recusa o bucket com CMK.
 
 ## 6. Segredos e IAM
 

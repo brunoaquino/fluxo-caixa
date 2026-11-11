@@ -47,12 +47,11 @@ resource "aws_cloudwatch_dashboard" "operacao" {
             title  = "CPU e memoria do ECS"
             region = var.region
             period = 60
-            metrics = flatten([
-              for name, service in var.services : [
-                ["AWS/ECS", "CPUUtilization", "ClusterName", var.cluster_name, "ServiceName", service.ecs_service_name, { label = "${name} cpu" }],
-                ["AWS/ECS", "MemoryUtilization", "ClusterName", var.cluster_name, "ServiceName", service.ecs_service_name, { label = "${name} memoria" }],
-              ]
-            ])
+            # concat, nao flatten: flatten desce ate a linha da metrica e o CloudWatch recusa o corpo.
+            metrics = concat(
+              [for name, service in var.services : ["AWS/ECS", "CPUUtilization", "ClusterName", var.cluster_name, "ServiceName", service.ecs_service_name, { label = "${name} cpu" }]],
+              [for name, service in var.services : ["AWS/ECS", "MemoryUtilization", "ClusterName", var.cluster_name, "ServiceName", service.ecs_service_name, { label = "${name} memoria" }]],
+            )
           }
         },
         {

@@ -63,6 +63,7 @@ data "aws_iam_policy_document" "topic" {
 
   # O root permanece para o Terraform e para a operacao da conta.
   # A aplicacao nao usa o root: a task role e a unica com sns:Publish no IAM.
+  # Unsubscribe nao entra: a policy do topico rejeita essa action.
   statement {
     sid = "OperacaoDaConta"
     actions = [
@@ -70,7 +71,6 @@ data "aws_iam_policy_document" "topic" {
       "sns:SetTopicAttributes",
       "sns:ListSubscriptionsByTopic",
       "sns:Subscribe",
-      "sns:Unsubscribe",
       "sns:DeleteTopic",
     ]
     resources = [aws_sns_topic.lancamentos.arn]

@@ -28,6 +28,16 @@ output "cognito_issuer_uri" {
   value       = module.platform.cognito_issuer_uri
 }
 
+output "cognito_domain" {
+  description = "Prefixo do dominio hospedado do Cognito."
+  value       = module.platform.cognito_domain
+}
+
+output "cognito_token_endpoint" {
+  description = "Token endpoint OAuth do Cognito."
+  value       = module.platform.cognito_token_endpoint
+}
+
 output "lancamentos_topic_arn" {
   description = "Topico SNS."
   value       = module.platform.lancamentos_topic_arn

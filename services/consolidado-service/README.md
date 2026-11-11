@@ -116,10 +116,10 @@ O pool Lettuce tem timeout de comando e de conexão de 300 ms. O pool Hikari de 
 
 ## Rastreabilidade
 
-- HTTP propaga W3C Trace Context (`traceparent` / `tracestate`) pelo Micrometer Tracing com bridge OpenTelemetry. `management.tracing.propagation.type=w3c`.
+- HTTP e a fila propagam W3C (`traceparent` / `tracestate`) e `X-Amzn-Trace-Id`. O Boot não lê `OTEL_PROPAGATORS`. No perfil `aws`, métricas OTLP vão para o sidecar (`management.otlp.metrics.export.enabled=true`). No local continuam desligadas.
 - Header `X-Correlation-Id`: UUID. Se ausente ou inválido, o serviço gera outro, devolve no response e coloca `correlationId` no MDC. Valor inválido não é ecoado.
 - Logs JSON (formato logstash) incluem `traceId`, `spanId`, `correlationId` e, no consumo, `eventId` e `comercianteId`.
-- O consumidor extrai `traceparent`, `tracestate` e `correlationId` dos message attributes (raw delivery) e abre um span `CONSUMER` filho do produtor. Mensagem sem atributos de trace inicia um trace novo. O MDC é limpo no fim de cada mensagem, na mesma virtual thread.
+- O consumidor extrai `traceparent`, `tracestate`, `X-Amzn-Trace-Id` e `correlationId` dos message attributes (raw delivery) e abre um span `CONSUMER` filho do produtor. Mensagem sem atributos de trace inicia um trace novo. O MDC é limpo no fim de cada mensagem, na mesma virtual thread. `/actuator/health` não vira trace.
 
 ## API
 

@@ -46,13 +46,13 @@ data "aws_iam_policy_document" "alerts" {
     }
   }
 
+  # Unsubscribe nao entra: a policy do topico rejeita essa action.
   statement {
     sid = "OperacaoDaConta"
     actions = [
       "sns:GetTopicAttributes",
       "sns:SetTopicAttributes",
       "sns:Subscribe",
-      "sns:Unsubscribe",
       "sns:ListSubscriptionsByTopic",
       "sns:DeleteTopic",
     ]

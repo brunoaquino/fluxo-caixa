@@ -1,11 +1,6 @@
 locals {
-  # O caller pode sobrescrever OTEL_PROPAGATORS. O default injeta W3C e X-Ray.
-  environment_map = merge(
-    {
-      OTEL_PROPAGATORS = var.otel_propagators
-    },
-    var.environment,
-  )
+  # O Boot não lê OTEL_PROPAGATORS. A aplicação compõe W3C e X-Ray num bean.
+  environment_map = var.environment
 
   adot_config = templatefile("${path.module}/adot-config.yaml.tftpl", {
     region            = var.aws_region
@@ -70,7 +65,7 @@ locals {
       },
       {
         name  = "OTEL_PROPAGATORS"
-        value = "tracecontext,xray"
+        value = "tracecontext,baggage,xray"
       },
     ]
     secrets = [

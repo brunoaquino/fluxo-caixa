@@ -201,8 +201,9 @@ Dentro da rede do compose, `JWT_ISSUER_URI` deve permanecer `http://localhost:80
 - ECS Fargate: cluster único, um serviço por microsserviço, mínimo 2 tasks em AZs distintas, auto scaling (CPU e `ALBRequestCountPerTarget`), deployment circuit breaker com rollback, Container Insights.
 - RDS PostgreSQL **separado por serviço** em prod (isolamento de falha), Multi-AZ, criptografado com KMS, senha gerenciada pelo Secrets Manager.
 - ElastiCache Redis/Valkey com réplica e failover automático (consolidado).
-- SNS + SQS + DLQ criptografados (KMS) com políticas restritas.
-- Cognito User Pool + Resource Server `fluxo-caixa` (escopos acima) + Pre Token Generation Lambda (v2) para incluir `comerciante_id` no access token.
+- SNS + SQS + DLQ criptografados (KMS) com políticas restritas. A policy do tópico não leva `sns:Unsubscribe`.
+- Access log do ALB em S3 com SSE-S3. O ELB não aceita CMK nesse bucket. Nove CMKs por ambiente: storage e secret de cada RDS, ElastiCache, mensageria, logs, ECR e `origin-verify`.
+- Cognito User Pool (Essentials) + domínio hospedado + Resource Server `fluxo-caixa` (escopos acima) + Pre Token Generation Lambda (v2) para incluir `comerciante_id` e os mesmos escopos no access token.
 - Observabilidade: CloudWatch Logs, ADOT collector como sidecar (traces → X-Ray, métricas → CloudWatch/AMP), dashboards e alarmes (5xx, latência p99, profundidade da fila, idade da mensagem mais antiga, mensagens na DLQ) com notificação via SNS.
 - ECR com scan on push e imagens imutáveis.
 

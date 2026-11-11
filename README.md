@@ -36,7 +36,7 @@ O `lancamentos-service` não chama o `consolidado-service`. O POST grava o lanç
 | Observabilidade | OpenTelemetry. ADOT, CloudWatch e X-Ray na AWS. Grafana LGTM no local |
 | Infra | Terraform (provider AWS 6.x), ambientes `dev`, `hml` e `prod`, state em S3 |
 
-Licença de runtime: nenhuma paga. A estimativa em `us-east-1`, com os três ambientes ligados o mês inteiro e o API Gateway REST ligado, fica em cerca de **USD 143/mês** (dev), **USD 356/mês** (hml) e **USD 777/mês** (prod). A mesma produção em `sa-east-1`, com o mesmo unitário de request da REST API (não reconsultado naquela região nesta passagem), sairia cerca de **USD 1.467/mês**. Local continua **USD 0**. Detalhe em [documentos-brutos/08-custos.md](documentos-brutos/08-custos.md).
+Licença de runtime: nenhuma paga. A estimativa em `us-east-1`, com os três ambientes ligados o mês inteiro e o API Gateway REST ligado, fica em cerca de **USD 147/mês** (dev), **USD 359/mês** (hml) e **USD 778/mês** (prod). A mesma produção em `sa-east-1`, com o mesmo unitário de request da REST API (não reconsultado naquela região nesta passagem), sairia cerca de **USD 1.468/mês**. Local continua **USD 0**. Detalhe em [documentos-brutos/08-custos.md](documentos-brutos/08-custos.md).
 
 ## Estrutura do repositório
 
@@ -170,6 +170,31 @@ O que cada camada cobre está em [documentos-brutos/11-testes.md](documentos-bru
 ## Deploy na AWS
 
 Produção em `us-east-1`: CloudFront com WAF, API Gateway REST regional com WAF próprio e VPC Link v2 até um ALB interno, VPC em três zonas, ECS Fargate com no mínimo duas tasks por serviço, RDS PostgreSQL separado e Multi-AZ para cada serviço, ElastiCache com réplica, SNS/SQS/DLQ, Cognito, Secrets Manager com rotação e ADOT. Há também `dev` e `hml`, menores. `enable_api_gateway = false` tira o gateway e volta o CloudFront à VPC Origin. O passo a passo de apply, state e variáveis fica em [infra/terraform/README.md](infra/terraform/README.md). A topologia e o DR estão em [documentos-brutos/03-arquitetura/deployment-aws.md](documentos-brutos/03-arquitetura/deployment-aws.md). O deploy da aplicação é rolling com circuit breaker e rollback ([ADR 0020](documentos-brutos/04-adr/0020-estrategia-de-deploy.md)), promovendo a mesma imagem de dev para hml e prod.
+
+O Cognito do ambiente é um user pool Essentials com domínio hospedado `fluxo-caixa-<env>-<account_id>` e app client público. O Terraform não cria usuário. O pool só aceita usuário criado por admin, e a senha do laboratório local não passa na policy (12 caracteres, com maiúscula, minúscula e número). O atributo developer-only entra como `dev:custom:comerciante_id`, um UUID de 36 caracteres. A Lambda de pre-token copia esse valor para o claim e acrescenta os escopos `fluxo-caixa/lancamentos:write`, `fluxo-caixa/lancamentos:read` e `fluxo-caixa/consolidado:read`, então o `USER_PASSWORD_AUTH` passa no authorizer.
+
+```bash
+cd infra/terraform/envs/dev
+POOL=$(terraform output -raw cognito_user_pool_id)
+CLIENT=$(terraform output -raw cognito_user_pool_client_id)
+CF=$(terraform output -raw cloudfront_domain_name)
+
+aws cognito-idp admin-create-user \
+  --user-pool-id "$POOL" --username comerciante1 --message-action SUPPRESS \
+  --user-attributes Name=dev:custom:comerciante_id,Value=11111111-1111-1111-1111-111111111111
+aws cognito-idp admin-set-user-password \
+  --user-pool-id "$POOL" --username comerciante1 --password 'SENHA_QUE_PASSA_NA_POLICY' --permanent
+
+TOKEN=$(aws cognito-idp initiate-auth \
+  --auth-flow USER_PASSWORD_AUTH --client-id "$CLIENT" \
+  --auth-parameters USERNAME=comerciante1,PASSWORD='SENHA_QUE_PASSA_NA_POLICY' \
+  --query AuthenticationResult.AccessToken --output text)
+
+curl -sS -H "Authorization: Bearer $TOKEN" \
+  "https://${CF}/api/v1/consolidados/diario/$(date +%F)"
+```
+
+A URL pública é o CloudFront. Sem token a borda responde 401. O `execute-api` direto, sem o header `X-Origin-Verify`, responde 403. O primeiro apply pode usar `image_tag = "bootstrap"` para criar os repositórios; a task só fica de pé depois do push da imagem ARM64 e de um apply com essa tag. O ECR é imutável.
 
 ## Documentação
 

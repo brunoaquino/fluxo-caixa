@@ -48,6 +48,17 @@ variable "domain_names" {
   default     = []
 }
 
+variable "cognito_domain_prefix" {
+  description = "Prefixo do dominio hospedado do Cognito. Nulo usa fluxo-caixa-<env>-<account_id>."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.cognito_domain_prefix == null || can(regex("^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$", var.cognito_domain_prefix))
+    error_message = "cognito_domain_prefix usa minusculas, numeros e hifen, com 1 a 63 caracteres."
+  }
+}
+
 variable "adot_image" {
   description = "Imagem do ADOT collector, com tag fixa e suporte a ARM64."
   type        = string

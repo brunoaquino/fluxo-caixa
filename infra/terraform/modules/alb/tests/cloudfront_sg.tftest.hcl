@@ -35,7 +35,6 @@ run "somente_prefix_list_do_cloudfront" {
     subnet_ids              = ["subnet-a", "subnet-b"]
     deletion_protection     = false
     access_logs_bucket_name = "fluxo-caixa-dev-alb-logs-123456789012"
-    logs_kms_key_arn        = "arn:aws:kms:us-east-1:123456789012:key/alb-logs"
     enable_waf              = false
     services = {
       lancamentos = {
@@ -66,6 +65,11 @@ run "somente_prefix_list_do_cloudfront" {
     condition     = length(aws_wafv2_web_acl.this) == 0
     error_message = "O WAF regional do ALB fica desligado. A inspecao e no WAF de escopo CLOUDFRONT."
   }
+
+  assert {
+    condition     = one(one(aws_s3_bucket_server_side_encryption_configuration.logs.rule).apply_server_side_encryption_by_default).sse_algorithm == "AES256"
+    error_message = "Access log do ALB usa SSE-S3. O ELB nao grava em bucket com CMK."
+  }
 }
 
 run "listener_so_encaminha_as_duas_apis" {
@@ -77,7 +81,6 @@ run "listener_so_encaminha_as_duas_apis" {
     subnet_ids              = ["subnet-a", "subnet-b", "subnet-c"]
     deletion_protection     = true
     access_logs_bucket_name = "fluxo-caixa-prod-alb-logs-123456789012" # gitleaks:allow nome de bucket de teste, nao credencial
-    logs_kms_key_arn        = "arn:aws:kms:us-east-1:123456789012:key/alb-logs"
     enable_waf              = false
     services = {
       lancamentos = {
@@ -133,7 +136,6 @@ run "prefixo_do_stage_e_reescrito" {
     subnet_ids              = ["subnet-a", "subnet-b"]
     deletion_protection     = false
     access_logs_bucket_name = "fluxo-caixa-dev-alb-logs-123456789012"
-    logs_kms_key_arn        = "arn:aws:kms:us-east-1:123456789012:key/alb-logs"
     enable_waf              = false
     stage_path_prefix       = "v1"
     services = {

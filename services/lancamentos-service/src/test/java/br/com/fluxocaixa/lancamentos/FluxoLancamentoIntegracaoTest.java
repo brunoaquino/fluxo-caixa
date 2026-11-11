@@ -277,6 +277,26 @@ class FluxoLancamentoIntegracaoTest {
     }
 
     @Test
+    void headerXrayDoApiGatewayViraOTraceDaMensagem() throws Exception {
+        String resposta = mockMvc.perform(post("/api/v1/lancamentos")
+                        .with(token("lancamentos:write"))
+                        .header("X-Amzn-Trace-Id", "Root=1-4bf92f35-77b34da6a3ce929d0e0e4736;Parent=53995c3f42cd8ad8;Sampled=1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"tipo":"CREDITO","valor":7.00,"dataLancamento":"2026-11-06","descricao":"Com xray"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String id = jsonMapper.readTree(resposta).get("id").asString();
+
+        Message mensagem = aguardarMensagem(id);
+        assertThat(mensagem.messageAttributes().get("traceparent").stringValue())
+                .matches("00-" + TRACE_ID + "-[0-9a-f]{16}-[0-9a-f]{2}");
+        assertThat(mensagem.messageAttributes().get("X-Amzn-Trace-Id").stringValue())
+                .contains("Root=1-4bf92f35-77b34da6a3ce929d0e0e4736");
+    }
+
+    @Test
     void circuitoAbertoAdiaOLoteSemPerderEventoENaoDerrubaReadiness() throws Exception {
         var circuito = circuitos.circuitBreaker("publicacaoSns");
         circuito.transitionToOpenState();

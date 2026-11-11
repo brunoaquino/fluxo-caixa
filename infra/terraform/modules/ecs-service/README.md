@@ -30,7 +30,7 @@ module "ecs_service" {
 | `desired_count` | `number` | Tasks iniciais. O autoscaling assume o valor depois; o Terraform ignora mudancas posteriores. |
 | `min_capacity` | `number` | Minimo do autoscaling. Em prod, 2 para espalhar entre AZs. |
 | `max_capacity` | `number` | Maximo do autoscaling. |
-| `environment` | `map(string)` | Variaveis de ambiente do contrato. Sem segredo. |
+| `environment` | `map(string)` | Variaveis da aplicacao, sem segredo. O Boot nao le `OTEL_PROPAGATORS`; o bean Java compoe W3C e X-Ray. O sidecar ADOT continua com `tracecontext,baggage,xray`. |
 | `secrets` | `list(object({` | Segredos injetados pelo ECS a partir do Secrets Manager. valueFrom pode apontar para uma chave JSON. |
 | `secret_arns` | `list(string)` | ARNs puros dos secrets, para o IAM da execution role. |
 | `execution_kms_key_arns` | `list(string)` | CMKs que a execution role precisa decifrar (secret do RDS e logs). |
@@ -44,11 +44,10 @@ module "ecs_service" {
 | `alb_security_group_id` | `string` | Security group do ALB. |
 | `vpc_endpoint_security_group_id` | `string` | Security group dos interface endpoints. Nulo abre HTTPS 443 para a internet (NAT), usado em dev. |
 | `capacity_provider_strategy` | `list(object({` | Capacity providers da task. Dev usa FARGATE_SPOT. Hml e prod usam FARGATE. |
-| `otel_propagators` | `string` | Propagadores OpenTelemetry da aplicacao. tracecontext e o W3C. xray cobre o cabecalho do X-Ray. |
 | `task_secret_arns` | `list(string)` | Secrets que a task role le em runtime (AWS JDBC Wrapper). Nao vao para a execution role. |
 | `task_secret_kms_key_arns` | `list(string)` | CMKs dos secrets lidos pela task role. A policy concede apenas kms:Decrypt. |
 | `data_plane_access` | `list(object({` | Saida para RDS ou Redis do proprio servico. O modulo tambem abre o ingress no SG de destino. |
-| `readonly_root_filesystem` | `bool` | Filesystem raiz somente leitura, com /tmp montado a parte. |
+| `readonly_root_filesystem` | `bool` | Filesystem raiz somente leitura, com /tmp montado a parte. No Fargate esse volume nasce como root; a imagem faz chmod 1777 e desce para o usuario app. |
 | `enable_execute_command` | `bool` | Liga o ECS Exec. Util em dev, desligado em prod. |
 | `enable_request_count_scaling` | `bool` | Target tracking de ALBRequestCountPerTarget. |
 | `request_count_target` | `number` | Requisicoes por minuto por task. 1500 equivale a cerca de 25 req/s. |

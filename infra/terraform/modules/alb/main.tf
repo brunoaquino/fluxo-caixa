@@ -47,7 +47,10 @@ resource "aws_lb" "this" {
     enabled = true
   }
 
-  depends_on = [aws_s3_bucket_policy.logs]
+  depends_on = [
+    aws_s3_bucket_policy.logs,
+    aws_s3_bucket_server_side_encryption_configuration.logs,
+  ]
 
   tags = {
     Name = "${var.name_prefix}-alb"

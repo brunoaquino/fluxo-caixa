@@ -116,6 +116,12 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-opentelemetry</artifactId>
         </dependency>
+        <!-- Mesma linha do OpenTelemetry 1.55 do Boot 4.0.9. O Boot não lê OTEL_PROPAGATORS. -->
+        <dependency>
+            <groupId>io.opentelemetry.contrib</groupId>
+            <artifactId>opentelemetry-aws-xray-propagator</artifactId>
+            <version>1.55.0-alpha</version>
+        </dependency>
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>

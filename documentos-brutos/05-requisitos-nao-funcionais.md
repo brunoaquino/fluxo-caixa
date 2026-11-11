@@ -116,7 +116,7 @@ O relatório do k6 fica como evidência do RNF-05. A corrida de 1 minuto no Dock
 | RNF-11 segurança | OIDC, escopos, WAF, KMS | [06](06-seguranca.md); testes 401/403/404 cruzado |
 | RNF-12 observabilidade | OTel, alarmes de fila e DLQ | Trace do POST até o consumidor no Grafana local; alarme com ação no Terraform |
 | RNF-13 manutenibilidade | Hexagonal, ArchUnit, `/api/v1`, `eventVersion` | Build com ArchUnit; contrato do evento em teste |
-| RNF-14 custo | Fargate ARM, RDS medium em prod, fila gerenciada, região `us-east-1`, REST API | [08](08-custos.md): cerca de USD 777/mês em prod, USD 143 em dev e USD 356 em hml, 24×7 |
+| RNF-14 custo | Fargate ARM, RDS medium em prod, fila gerenciada, região `us-east-1`, REST API | [08](08-custos.md): cerca de USD 778/mês em prod, USD 147 em dev e USD 359 em hml, 24×7 |
 | RNF-15 LGPD | Transferência internacional com salvaguarda, evento sem descrição | [ADR 0021](04-adr/0021-regiao-us-east-1.md); revisão do payload v1 |
 | RNF-16 escala | Auto scaling. Teto 10 nos dois serviços. Backlog da fila por target tracking | Revisão do módulo ECS. Teste de política em dev (subir CPU artificial) ainda não executado |
 

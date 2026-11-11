@@ -46,7 +46,11 @@ jobs:
           terraform_wrapper: false
       - name: Init e validate
         working-directory: infra/terraform/envs/${{ matrix.env }}
-        run: terraform init -backend=false && terraform validate
+        run: |
+          data="$(mktemp -d)"
+          trap 'rm -rf "$data"' EXIT
+          TF_DATA_DIR="$data" terraform init -backend=false -input=false -lockfile=readonly
+          TF_DATA_DIR="$data" terraform validate
 
   validate-bootstrap:
     needs: fmt
@@ -59,7 +63,11 @@ jobs:
           terraform_wrapper: false
       - name: Init e validate do bootstrap
         working-directory: infra/terraform/bootstrap
-        run: terraform init -backend=false && terraform validate
+        run: |
+          data="$(mktemp -d)"
+          trap 'rm -rf "$data"' EXIT
+          TF_DATA_DIR="$data" terraform init -backend=false -input=false -lockfile=readonly
+          TF_DATA_DIR="$data" terraform validate
 
   # Regras do provider AWS alem do que o validate enxerga (nomes, argumentos obsoletos).
   tflint:
@@ -162,6 +170,7 @@ jobs:
         env:
           INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
           TF_CLI_ARGS_init: -backend=false
+          TF_DATA_DIR: /tmp/infracost-tfdata
         run: |
           infracost breakdown \
             --path infra/terraform/envs/dev \

@@ -30,10 +30,11 @@ resource "aws_s3_bucket_versioning" "logs" {
   }
 }
 
+# O ELB recusa o bucket com SSE-KMS (Access Denied for bucket). So SSE-S3.
+#trivy:ignore:AVD-AWS-0132
 resource "aws_s3_bucket_server_side_encryption_configuration" "logs" {
   bucket = aws_s3_bucket.logs.id
 
-  # O ELB recusa o bucket com SSE-KMS (Access Denied for bucket). So SSE-S3.
   rule {
     apply_server_side_encryption_by_default {
       sse_algorithm = "AES256"

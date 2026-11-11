@@ -96,7 +96,7 @@ jobs:
         run: echo "tag=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
 
       - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
 
       - id: build-lancamentos
         name: Build lancamentos

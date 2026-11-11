@@ -104,6 +104,29 @@ data "aws_iam_policy_document" "task" {
   }
 
   dynamic "statement" {
+    for_each = length(var.task_secret_arns) == 0 ? [] : [1]
+
+    content {
+      sid = "LerSegredoDoBanco"
+      actions = [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret",
+      ]
+      resources = var.task_secret_arns
+    }
+  }
+
+  dynamic "statement" {
+    for_each = length(var.task_secret_kms_key_arns) == 0 ? [] : [1]
+
+    content {
+      sid       = "DecifrarSegredoDoBanco"
+      actions   = ["kms:Decrypt"]
+      resources = var.task_secret_kms_key_arns
+    }
+  }
+
+  dynamic "statement" {
     for_each = var.task_policy_statements
 
     content {

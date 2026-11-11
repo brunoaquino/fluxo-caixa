@@ -45,7 +45,7 @@ services:
     container_name: fluxo-caixa-localstack
     environment:
       SERVICES: sns,sqs
-      AWS_DEFAULT_REGION: sa-east-1
+      AWS_DEFAULT_REGION: us-east-1
       DEBUG: "0"
     ports:
       - "4566:4566"
@@ -98,6 +98,23 @@ services:
       - "4317:4317"
       - "4318:4318"
 
+  # Envia o stdout dos containers para o Loki do otel-lgtm.
+  # O log JSON do servico traz traceId, spanId e correlationId.
+  alloy:
+    profiles: ["infra", "completo"]
+    image: grafana/alloy:v1.10.2
+    container_name: fluxo-caixa-alloy
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - otel-lgtm
+
   lancamentos-service:
     profiles: ["completo"]
     build:
@@ -109,15 +126,17 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/lancamentos
       DB_USERNAME: lancamentos
       DB_PASSWORD: lancamentos
-      AWS_REGION: sa-east-1
+      AWS_REGION: us-east-1
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
       AWS_ENDPOINT_URL: http://localstack:4566
-      LANCAMENTOS_TOPIC_ARN: arn:aws:sns:sa-east-1:000000000000:fluxo-caixa-lancamentos-events
+      LANCAMENTOS_TOPIC_ARN: arn:aws:sns:us-east-1:000000000000:fluxo-caixa-lancamentos-events
       JWT_ISSUER_URI: http://localhost:8080/realms/fluxo-caixa
       JWT_JWK_SET_URI: http://keycloak:8080/realms/fluxo-caixa/protocol/openid-connect/certs
       APP_SECURITY_SCOPE_PREFIX: ""
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-lgtm:4318
+      OTEL_SERVICE_NAME: lancamentos
+      OTEL_PROPAGATORS: tracecontext,baggage
       SPRING_PROFILES_ACTIVE: local
     ports:
       - "8081:8081"
@@ -148,7 +167,7 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/consolidado
       DB_USERNAME: consolidado
       DB_PASSWORD: consolidado
-      AWS_REGION: sa-east-1
+      AWS_REGION: us-east-1
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
       AWS_ENDPOINT_URL: http://localstack:4566
@@ -160,6 +179,8 @@ services:
       JWT_JWK_SET_URI: http://keycloak:8080/realms/fluxo-caixa/protocol/openid-connect/certs
       APP_SECURITY_SCOPE_PREFIX: ""
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-lgtm:4318
+      OTEL_SERVICE_NAME: consolidado
+      OTEL_PROPAGATORS: tracecontext,baggage
       SPRING_PROFILES_ACTIVE: local
     ports:
       - "8082:8082"

@@ -1,0 +1,66 @@
+aws_region  = "us-east-1"
+environment = "hml"
+
+# assume_role_arn = "arn:aws:iam::222222222222:role/fluxo-caixa-hml-terraform"
+
+alert_email = ""
+image_tag   = "bootstrap"
+
+enable_api_gateway = true
+api_cache_enabled  = false
+api_consumers      = {}
+
+sizing = {
+  az_count                    = 2
+  nat_gateway_per_az          = false
+  interface_endpoint_az_count = 2
+  vpc_cidr                    = "10.21.0.0/16"
+  flow_log_traffic_type       = "ALL"
+  log_retention_days          = 14
+  kms_deletion_window_days    = 14
+  alb_deletion_protection     = false
+  cognito_deletion_protection = "INACTIVE"
+  enable_execute_command      = false
+  container_insights          = "enabled"
+  capacity_provider           = "FARGATE"
+  rds_instance_class          = "db.t4g.small"
+  rds_allocated_storage       = 20
+  rds_max_allocated_storage   = 50
+  rds_multi_az                = false
+  rds_deletion_protection     = false
+  rds_skip_final_snapshot     = true
+  rds_backup_retention_days   = 7
+  rds_apply_immediately       = true
+  rds_monitoring_interval     = 0
+  rds_rotation_days           = 30
+  read_replica_count          = 0
+  enable_rds_proxy            = false
+  rds_connection_threshold    = 150
+  rds_free_storage_threshold  = 5368709120
+  redis_node_type             = "cache.t4g.small"
+  redis_num_cache_clusters    = 1
+  redis_automatic_failover    = false
+  redis_multi_az              = false
+  redis_snapshot_retention    = 7
+  lancamentos_cpu             = 512
+  lancamentos_memory          = 1024
+  lancamentos_desired_count   = 1
+  lancamentos_min_capacity    = 1
+  lancamentos_max_capacity    = 3
+  consolidado_cpu             = 1024
+  consolidado_memory          = 2048
+  consolidado_desired_count   = 1
+  consolidado_min_capacity    = 1
+  consolidado_max_capacity    = 3
+  anonymous_ip_count_only     = false
+  waf_rate_limit              = 30000
+  api_stage_rate_limit        = 100
+  api_stage_burst_limit       = 200
+  api_consolidado_rate_limit  = 80
+  api_consolidado_burst_limit = 160
+  api_lancamentos_write_rate_limit  = 40
+  api_lancamentos_write_burst_limit = 80
+  api_lancamentos_read_rate_limit   = 40
+  api_lancamentos_read_burst_limit  = 80
+  origin_verify_rotation_days = 30
+}

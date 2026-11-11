@@ -1,6 +1,6 @@
 # Cache Redis/ElastiCache no consolidado
 
-- **Status:** Aceito
+- **Status:** Aceito. O fallback quando o Redis falha ou abre o circuito está no [ADR 0023](0023-resilience4j-e-versoes.md).
 - **Data:** 2026-11-10
 
 ## Contexto e problema
@@ -31,7 +31,7 @@ O SLO de leitura é p95 &lt; 100 ms no GET do saldo, com 50 req/s. O Postgres ag
 Chaves `consolidado:versao:{comercianteId}`, `consolidado:dia:{comercianteId}:{versao}:{data}` e `consolidado:relatorio:{comercianteId}:{versao}:{inicio}:{fim}`. Cada evento aplicado faz `INCR` na versão daquele comerciante depois do commit. TTL de 30 s nas entradas (`app.cache.ttl`). ElastiCache Valkey 8.2, nó `cache.t4g.small` com réplica e failover, TLS (`REDIS_SSL=true`) e sem senha. No Docker local o cache é Redis 7 sem TLS. A aplicação fala protocolo Redis; Valkey é a escolha de produção por compatibilidade e por preço de tabela inferior ao Redis equivalente na AWS.
 
 - Positivo: as duas tasks veem a mesma geração. Estorno antigo não exige apagar um conjunto desconhecido de chaves. Queda do cache: o caso de uso lê o Postgres. Queda do primário: a réplica assume.
-- Negativo: mais um serviço gerenciado (cerca de USD 71/mês os dois nós small em `sa-east-1`, [custos](../08-custos.md)). Invalidação por versão deixa lixo até o TTL (aceito). Se o `INCR` falhar depois do commit do saldo, a versão antiga continua válida até o TTL — janela de leitura obsoleta de no máximo 30 s. Não se finge que o cache é linearizável com o banco.
+- Negativo: mais um serviço gerenciado (cerca de USD 37/mês os dois nós small em `us-east-1`, [custos](../08-custos.md); em `sa-east-1` a mesma dupla ficaria perto de USD 71). Invalidação por versão deixa lixo até o TTL (aceito). Se o `INCR` falhar depois do commit do saldo, a versão antiga continua válida até o TTL — janela de leitura obsoleta de no máximo 30 s. Não se finge que o cache é linearizável com o banco.
 
 ## Decisão
 

@@ -1,8 +1,17 @@
 # Profile local: LocalStack, Keycloak e Postgres chegam pelas variáveis de ambiente.
+app:
+  security:
+    swagger-publico: true
+
 management:
   endpoint:
     health:
       show-details: always
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/traces
 
 logging:
   level:

@@ -41,6 +41,7 @@ public class LancamentoController {
 
     private static final int TAMANHO_PADRAO = 50;
     private static final int TAMANHO_MAXIMO = 100;
+    private static final int PAGINA_MAXIMA = 1000;
 
     private final RegistrarLancamento registrarLancamento;
     private final ConsultarLancamento consultarLancamento;
@@ -69,6 +70,7 @@ public class LancamentoController {
             @Valid @RequestBody RegistrarLancamentoRequest requisicao
     ) {
         UUID comercianteId = comercianteAutenticado.exigir();
+        MdcDeNegocio.comerciante(comercianteId);
         ResultadoEscrita resultado = registrarLancamento.executar(new RegistrarLancamentoComando(
                 comercianteId,
                 interpretarChave(chaveIdempotencia),
@@ -78,13 +80,17 @@ public class LancamentoController {
                 requisicao.descricao(),
                 requisicao.categoria()
         ));
+        MdcDeNegocio.lancamento(resultado.lancamento().id());
         return responderEscrita(resultado);
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Detalha um lançamento do comerciante autenticado")
     public LancamentoResponse detalhar(@PathVariable UUID id) {
-        return responder(consultarLancamento.executar(comercianteAutenticado.exigir(), id));
+        UUID comercianteId = comercianteAutenticado.exigir();
+        MdcDeNegocio.comerciante(comercianteId);
+        MdcDeNegocio.lancamento(id);
+        return responder(consultarLancamento.executar(comercianteId, id));
     }
 
     @GetMapping
@@ -94,10 +100,12 @@ public class LancamentoController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "" + TAMANHO_PADRAO) int size
     ) {
-        if (page < 0 || size < 1 || size > TAMANHO_MAXIMO) {
+        if (page < 0 || page > PAGINA_MAXIMA || size < 1 || size > TAMANHO_MAXIMO) {
             throw new PaginacaoInvalidaException();
         }
-        Pagina<Lancamento> pagina = listarLancamentos.executar(comercianteAutenticado.exigir(), data, page, size);
+        UUID comercianteId = comercianteAutenticado.exigir();
+        MdcDeNegocio.comerciante(comercianteId);
+        Pagina<Lancamento> pagina = listarLancamentos.executar(comercianteId, data, page, size);
         return new PaginaResponse<>(
                 pagina.conteudo().stream().map(this::responder).toList(),
                 pagina.pagina(),
@@ -114,13 +122,17 @@ public class LancamentoController {
             @RequestHeader(name = "Idempotency-Key", required = false) String chaveIdempotencia,
             @Valid @RequestBody(required = false) EstornarLancamentoRequest requisicao
     ) {
+        UUID comercianteId = comercianteAutenticado.exigir();
+        MdcDeNegocio.comerciante(comercianteId);
+        MdcDeNegocio.lancamento(id);
         String motivo = requisicao == null ? null : requisicao.motivo();
         ResultadoEscrita resultado = estornarLancamento.executar(new EstornarLancamentoComando(
-                comercianteAutenticado.exigir(),
+                comercianteId,
                 id,
                 interpretarChave(chaveIdempotencia),
                 motivo
         ));
+        MdcDeNegocio.lancamento(resultado.lancamento().id());
         return responderEscrita(resultado);
     }
 
@@ -157,7 +169,7 @@ public class LancamentoController {
         try {
             return UUID.fromString(valor.trim());
         } catch (IllegalArgumentException ex) {
-            throw new ChaveIdempotenciaInvalidaException(valor);
+            throw new ChaveIdempotenciaInvalidaException();
         }
     }
 }

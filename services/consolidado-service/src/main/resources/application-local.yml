@@ -2,3 +2,5 @@
 app:
   aws:
     endpoint-url: ${AWS_ENDPOINT_URL:http://localhost:4566}
+  security:
+    swagger-publico: true

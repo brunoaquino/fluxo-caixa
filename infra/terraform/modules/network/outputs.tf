@@ -29,6 +29,6 @@ output "data_subnet_ids" {
 }
 
 output "endpoint_security_group_id" {
-  description = "Security group dos interface endpoints."
-  value       = aws_security_group.endpoints.id
+  description = "Security group dos interface endpoints. Nulo quando interface_endpoint_az_count e 0."
+  value       = one(aws_security_group.endpoints[*].id)
 }

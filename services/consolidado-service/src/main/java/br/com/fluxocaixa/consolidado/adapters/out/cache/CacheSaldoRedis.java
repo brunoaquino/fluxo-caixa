@@ -4,8 +4,12 @@ import br.com.fluxocaixa.consolidado.application.consulta.RelatorioPeriodoConsul
 import br.com.fluxocaixa.consolidado.application.consulta.SaldoDiarioConsulta;
 import br.com.fluxocaixa.consolidado.application.port.out.CacheSaldoPort;
 import br.com.fluxocaixa.consolidado.config.PropriedadesAplicacao;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import io.github.resilience4j.timelimiter.TimeLimiterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
@@ -15,6 +19,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.Executors;
 
 /**
  * Cache-aside com geração por comerciante. A chave de dados inclui a versão corrente.
@@ -24,7 +29,7 @@ import java.util.UUID;
  * Qualquer falha do Redis degrada para o banco, sem propagar erro.
  */
 @Component
-public class CacheSaldoRedis implements CacheSaldoPort {
+public class CacheSaldoRedis implements CacheSaldoPort, DisposableBean {
 
     private static final Logger log = LoggerFactory.getLogger(CacheSaldoRedis.class);
 
@@ -33,8 +38,26 @@ public class CacheSaldoRedis implements CacheSaldoPort {
     private final Duration ttl;
 
     @Autowired
-    public CacheSaldoRedis(StringRedisTemplate redis, JsonMapper json, PropriedadesAplicacao propriedades) {
-        this(new ArmazemRedis(redis), json, propriedades.cache().ttl());
+    public CacheSaldoRedis(
+            StringRedisTemplate redis,
+            JsonMapper json,
+            PropriedadesAplicacao propriedades,
+            CircuitBreakerRegistry circuitBreakers,
+            TimeLimiterRegistry timeLimiters) {
+        this(new AcessoCacheResiliente(
+                        new ArmazemRedis(redis),
+                        circuitBreakers.circuitBreaker("redis"),
+                        timeLimiters.timeLimiter("redis"),
+                        Executors.newVirtualThreadPerTaskExecutor()),
+                json,
+                propriedades.cache().ttl());
+    }
+
+    @Override
+    public void destroy() {
+        if (armazem instanceof AcessoCacheResiliente acesso) {
+            acesso.close();
+        }
     }
 
     CacheSaldoRedis(ArmazemCache armazem, JsonMapper json, Duration ttl) {
@@ -48,7 +71,7 @@ public class CacheSaldoRedis implements CacheSaldoPort {
         try {
             return ler(chaveDia(comercianteId, data), SaldoDiarioConsulta.class);
         } catch (RuntimeException ex) {
-            log.warn("Cache indisponível ao montar a chave do dia {}", data, ex);
+            registrarFalha("Cache indisponível ao montar a chave do dia " + data, ex);
             return Optional.empty();
         }
     }
@@ -58,7 +81,7 @@ public class CacheSaldoRedis implements CacheSaldoPort {
         try {
             gravar(chaveDia(comercianteId, data), consulta);
         } catch (RuntimeException ex) {
-            log.warn("Cache indisponível ao gravar o dia {}", data, ex);
+            registrarFalha("Cache indisponível ao gravar o dia " + data, ex);
         }
     }
 
@@ -67,7 +90,7 @@ public class CacheSaldoRedis implements CacheSaldoPort {
         try {
             return ler(chaveRelatorio(comercianteId, inicio, fim), RelatorioPeriodoConsulta.class);
         } catch (RuntimeException ex) {
-            log.warn("Cache indisponível ao montar a chave do relatório {}-{}", inicio, fim, ex);
+            registrarFalha("Cache indisponível ao montar a chave do relatório " + inicio + "-" + fim, ex);
             return Optional.empty();
         }
     }
@@ -81,7 +104,7 @@ public class CacheSaldoRedis implements CacheSaldoPort {
         try {
             gravar(chaveRelatorio(comercianteId, inicio, fim), relatorio);
         } catch (RuntimeException ex) {
-            log.warn("Cache indisponível ao gravar o relatório {}-{}", inicio, fim, ex);
+            registrarFalha("Cache indisponível ao gravar o relatório " + inicio + "-" + fim, ex);
         }
     }
 
@@ -90,7 +113,9 @@ public class CacheSaldoRedis implements CacheSaldoPort {
         try {
             armazem.incrementar(chaveVersao(comercianteId));
         } catch (RuntimeException ex) {
-            log.warn("Falha ao invalidar o cache do comerciante {}; a consistência fica limitada ao TTL", comercianteId, ex);
+            registrarFalha(
+                    "Falha ao invalidar o cache do comerciante " + comercianteId + "; a consistência fica limitada ao TTL",
+                    ex);
         }
     }
 
@@ -102,7 +127,7 @@ public class CacheSaldoRedis implements CacheSaldoPort {
             }
             return Optional.of(json.readValue(valor, tipo));
         } catch (RuntimeException ex) {
-            log.warn("Cache indisponível ou ilegível na chave {}: a leitura segue pelo banco", chave, ex);
+            registrarFalha("Cache indisponível ou ilegível na chave " + chave + "; a leitura segue pelo banco", ex);
             return Optional.empty();
         }
     }
@@ -111,8 +136,27 @@ public class CacheSaldoRedis implements CacheSaldoPort {
         try {
             armazem.guardar(chave, json.writeValueAsString(valor), ttl);
         } catch (RuntimeException ex) {
-            log.warn("Falha ao gravar o cache da chave {}: a resposta foi servida pelo banco", chave, ex);
+            registrarFalha("Falha ao gravar o cache da chave " + chave + "; a resposta foi servida pelo banco", ex);
         }
+    }
+
+    private static void registrarFalha(String mensagem, RuntimeException ex) {
+        if (circuitoAberto(ex)) {
+            log.debug("{}: circuito do Redis aberto; a leitura segue pelo banco", mensagem);
+            return;
+        }
+        log.warn(mensagem, ex);
+    }
+
+    private static boolean circuitoAberto(Throwable ex) {
+        Throwable atual = ex;
+        while (atual != null) {
+            if (atual instanceof CallNotPermittedException) {
+                return true;
+            }
+            atual = atual.getCause();
+        }
+        return false;
     }
 
     private String chaveDia(UUID comercianteId, LocalDate data) {

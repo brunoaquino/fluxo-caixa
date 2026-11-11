@@ -5,6 +5,7 @@ import br.com.fluxocaixa.consolidado.application.consulta.SaldoDiarioConsulta;
 import br.com.fluxocaixa.consolidado.application.port.in.ConsultarRelatorioUseCase;
 import br.com.fluxocaixa.consolidado.application.port.in.ConsultarSaldoDiarioUseCase;
 import br.com.fluxocaixa.consolidado.config.ConfiguracaoSeguranca;
+import br.com.fluxocaixa.consolidado.observabilidade.CorrelationId;
 import br.com.fluxocaixa.consolidado.config.JwtDecoderTesteConfig;
 import br.com.fluxocaixa.consolidado.domain.exception.PeriodoConsultaInvalidoException;
 import br.com.fluxocaixa.consolidado.domain.model.MovimentoDia;
@@ -29,12 +30,20 @@ import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = ConsultaConsolidadoController.class)
 @ActiveProfiles("test")
-@Import({ConfiguracaoSeguranca.class, ComercianteAutenticado.class, JwtDecoderTesteConfig.class, TratadorErrosApi.class})
+@Import({
+        ConfiguracaoSeguranca.class,
+        ComercianteAutenticado.class,
+        JwtDecoderTesteConfig.class,
+        TratadorErrosApi.class,
+        LimitadorPassThroughConfig.class,
+        FiltroCorrelationId.class
+})
 class ConsultaConsolidadoControllerTest {
 
     private static final UUID COMERCIANTE = UUID.fromString("11111111-1111-1111-1111-111111111111");
@@ -75,8 +84,14 @@ class ConsultaConsolidadoControllerTest {
                 3,
                 Instant.parse("2026-11-10T18:00:00Z")));
 
-        mockMvc.perform(get("/api/v1/consolidados/diario/2026-11-10").with(token()))
+        mockMvc.perform(get("/api/v1/consolidados/diario/2026-11-10")
+                        .header(CorrelationId.HEADER, "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee")
+                        .with(token()))
                 .andExpect(status().isOk())
+                .andExpect(header().string(CorrelationId.HEADER, "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"))
+                .andExpect(header().string("X-Content-Type-Options", "nosniff"))
+                .andExpect(header().string("X-Frame-Options", "DENY"))
+                .andExpect(header().string("Referrer-Policy", "no-referrer"))
                 .andExpect(jsonPath("$.saldo").value(closeTo(200.0, 0.001)))
                 .andExpect(jsonPath("$.saldoAcumulado").value(closeTo(200.0, 0.001)))
                 .andExpect(jsonPath("$.quantidadeLancamentos").value(3));

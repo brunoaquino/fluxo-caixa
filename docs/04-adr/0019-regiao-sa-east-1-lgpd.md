@@ -1,7 +1,9 @@
 # Região sa-east-1 e LGPD
 
-- **Status:** Aceito
+- **Status:** Substituído (Superseded) pelo [ADR 0021](0021-regiao-us-east-1.md)
 - **Data:** 2026-11-10
+
+O texto abaixo é o registro histórico da decisão de residência no Brasil. A decisão vigente é `us-east-1`, com salvaguarda de transferência internacional. Não usar este ADR como fonte da região atual. Os USD 641 e USD 1.214 citados no corpo são da topologia anterior (RDS `db.t4g.small`, ALB público, sem ambiente de hml). A conta vigente está na revisão atual do [documento 08](../08-custos.md).
 
 ## Contexto e problema
 

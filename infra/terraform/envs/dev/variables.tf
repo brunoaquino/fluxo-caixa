@@ -1,267 +1,104 @@
-variable "aws_region" {
-  description = "Regiao de todos os recursos."
-  type        = string
-  default     = "sa-east-1"
-}
-
 variable "environment" {
-  description = "Nome do ambiente. Entra no prefixo dos recursos."
+  description = "Tem de ser dev neste diretorio. O state e a nomenclatura dependem disso."
   type        = string
+  default     = "dev"
 
   validation {
-    condition     = contains(["dev", "prod"], var.environment)
-    error_message = "environment deve ser dev ou prod."
+    condition     = var.environment == "dev"
+    error_message = "envs/dev so aplica environment = dev."
   }
 }
 
-variable "certificate_arn" {
-  description = "ARN do certificado ACM do listener HTTPS. Nao e criado por este stack."
+variable "aws_region" {
+  description = "Regiao da carga. Padrao us-east-1."
   type        = string
+  default     = "us-east-1"
 }
 
-variable "access_logs_bucket_name" {
-  description = "Bucket globalmente unico dos access logs do ALB."
+variable "assume_role_arn" {
+  description = "Role da conta deste ambiente. Nulo usa as credenciais correntes. Preencha quando cada ambiente tem a propria conta."
   type        = string
+  default     = null
+}
+
+variable "owner" {
+  description = "Tag Owner."
+  type        = string
+  default     = "plataforma"
+}
+
+variable "cost_center" {
+  description = "Tag CostCenter."
+  type        = string
+  default     = "fluxo-caixa"
 }
 
 variable "alert_email" {
-  description = "E-mail dos alarmes. Vazio deixa o topico sem inscricao."
+  description = "E-mail dos alarmes."
   type        = string
   default     = ""
 }
 
-variable "vpc_cidr" {
-  description = "CIDR da VPC."
-  type        = string
-  default     = "10.0.0.0/16"
-}
-
-variable "nat_gateway_per_az" {
-  description = "Um NAT por AZ em prod. Um NAT compartilhado em dev."
-  type        = bool
-}
-
-variable "interface_endpoint_az_count" {
-  description = "AZs com interface endpoint. 1 em dev, 3 em prod."
-  type        = number
-}
-
-variable "flow_log_traffic_type" {
-  description = "ACCEPT, REJECT ou ALL."
-  type        = string
-}
-
-variable "log_retention_days" {
-  description = "Retencao de logs."
-  type        = number
-}
-
-variable "kms_deletion_window_days" {
-  description = "Janela de exclusao das CMKs."
-  type        = number
-}
-
-variable "alb_deletion_protection" {
-  description = "Protecao contra delete do ALB."
-  type        = bool
-}
-
-variable "cognito_deletion_protection" {
-  description = "ACTIVE ou INACTIVE."
-  type        = string
-}
-
-variable "waf_rate_limit" {
-  description = "Limite do WAF por IP a cada 5 minutos."
-  type        = number
-  default     = 30000
-}
-
-variable "enable_execute_command" {
-  description = "ECS Exec nas tasks."
-  type        = bool
-}
-
-variable "topic_name" {
-  description = "Topico SNS. Prefixo de ambiente para dev e prod coexistirem na mesma conta."
-  type        = string
-}
-
-variable "queue_name" {
-  description = "Fila do consolidado."
-  type        = string
-}
-
-variable "dlq_name" {
-  description = "DLQ do consolidado."
-  type        = string
-}
-
 variable "image_tag" {
-  description = "Tag imutavel publicada no ECR."
+  description = "Tag imutavel no ECR."
   type        = string
   default     = "bootstrap"
-
-  validation {
-    condition     = var.image_tag != "latest"
-    error_message = "Nao use a tag latest. O ECR esta imutavel."
-  }
 }
 
-variable "adot_image" {
-  description = "Imagem do ADOT collector."
+variable "acm_certificate_arn" {
+  description = "ACM us-east-1 do CloudFront. Nulo usa *.cloudfront.net."
   type        = string
-  default     = "public.ecr.aws/aws-observability/aws-otel-collector:v0.51.0"
+  default     = null
 }
 
-variable "rds_engine_version" {
-  description = "Versao menor do PostgreSQL 17."
-  type        = string
-  default     = "17.11"
+variable "domain_names" {
+  description = "Aliases do CloudFront."
+  type        = list(string)
+  default     = []
 }
 
-variable "rds_instance_class" {
-  description = "Classe das duas instancias RDS."
-  type        = string
-}
-
-variable "rds_allocated_storage" {
-  description = "Storage inicial em GiB."
-  type        = number
-}
-
-variable "rds_max_allocated_storage" {
-  description = "Teto do autoscaling de storage."
-  type        = number
-}
-
-variable "rds_multi_az" {
-  description = "Multi-AZ."
+variable "enable_api_gateway" {
+  description = "true coloca o API Gateway entre o CloudFront e o ALB. false volta a VPC Origin."
   type        = bool
+  default     = true
 }
 
-variable "rds_deletion_protection" {
-  description = "Protecao contra delete do RDS."
+variable "api_cache_enabled" {
+  description = "Cache do stage do API Gateway. Padrao desligado."
   type        = bool
+  default     = false
 }
 
-variable "rds_skip_final_snapshot" {
-  description = "Pula o snapshot final. Somente dev."
-  type        = bool
+variable "api_key_required" {
+  description = "Rotas que exigem API key alem do JWT."
+  type        = map(bool)
+  default     = {}
 }
 
-variable "rds_backup_retention_days" {
-  description = "Retencao que habilita o PITR."
-  type        = number
+variable "api_consumers" {
+  description = "Consumidores de integracao. Vazio nao cria API key."
+  type = map(object({
+    description    = optional(string, "")
+    quota_limit    = number
+    quota_period   = string
+    throttle_rate  = number
+    throttle_burst = number
+  }))
+  default = {}
 }
 
-variable "rds_apply_immediately" {
-  description = "Aplica mudancas de RDS e Redis na hora."
-  type        = bool
+variable "api_canary" {
+  description = "Canary do stage. Nulo nao cria."
+  type = object({
+    percent_traffic          = number
+    use_stage_cache          = optional(bool, false)
+    stage_variable_overrides = optional(map(string), {})
+  })
+  default = null
 }
 
-variable "rds_connection_threshold" {
-  description = "Alarme de conexoes. Abaixo do max_connections da classe."
-  type        = number
-}
-
-variable "rds_free_storage_threshold" {
-  description = "Alarme de espaco livre, em bytes."
-  type        = number
-}
-
-variable "redis_engine_version" {
-  description = "Versao do Valkey."
-  type        = string
-  default     = "8.2"
-}
-
-variable "redis_node_type" {
-  description = "Tipo do no."
-  type        = string
-}
-
-variable "redis_num_cache_clusters" {
-  description = "Primario mais replicas."
-  type        = number
-}
-
-variable "redis_automatic_failover" {
-  description = "Failover automatico."
-  type        = bool
-}
-
-variable "redis_multi_az" {
-  description = "Replica em outra AZ."
-  type        = bool
-}
-
-variable "redis_snapshot_retention" {
-  description = "Dias de snapshot do Redis."
-  type        = number
-}
-
-variable "lancamentos_cpu" {
-  description = "CPU Fargate de lancamentos."
-  type        = number
-}
-
-variable "lancamentos_memory" {
-  description = "Memoria de lancamentos."
-  type        = number
-}
-
-variable "lancamentos_desired_count" {
-  description = "Tasks iniciais de lancamentos."
-  type        = number
-}
-
-variable "lancamentos_min_capacity" {
-  description = "Minimo do scaling de lancamentos."
-  type        = number
-}
-
-variable "lancamentos_max_capacity" {
-  description = "Maximo do scaling de lancamentos."
-  type        = number
-}
-
-variable "lancamentos_request_count_target" {
-  description = "Requests por minuto por task de lancamentos."
-  type        = number
-}
-
-variable "consolidado_cpu" {
-  description = "CPU Fargate do consolidado."
-  type        = number
-}
-
-variable "consolidado_memory" {
-  description = "Memoria do consolidado."
-  type        = number
-}
-
-variable "consolidado_desired_count" {
-  description = "Tasks iniciais do consolidado."
-  type        = number
-}
-
-variable "consolidado_min_capacity" {
-  description = "Minimo do scaling do consolidado. Prod fica em 2."
-  type        = number
-}
-
-variable "consolidado_max_capacity" {
-  description = "Maximo do scaling do consolidado."
-  type        = number
-}
-
-variable "consolidado_request_count_target" {
-  description = "Requests por minuto por task. 1500 cobre cerca de 25 req/s; duas tasks cobrem o pico de 50."
-  type        = number
-}
-
-variable "consolidado_queue_backlog_per_task" {
-  description = "Mensagens visiveis por task antes de subir mais tasks."
-  type        = number
+variable "sizing" {
+  description = "Sobrescritas do dimensionamento. O exemplo repete os defaults da secao 15."
+  type        = any
+  default     = {}
 }

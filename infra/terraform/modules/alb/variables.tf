@@ -8,19 +8,15 @@ variable "vpc_id" {
   type        = string
 }
 
-variable "public_subnet_ids" {
-  description = "Subnets publicas, uma por AZ."
+variable "subnet_ids" {
+  description = "Subnets privadas do ALB interno, uma por AZ. O CloudFront chega por VPC Origin."
   type        = list(string)
 }
 
-variable "certificate_arn" {
-  description = "ARN do certificado ACM na mesma regiao do ALB. O certificado nao e criado aqui."
-  type        = string
-
-  validation {
-    condition     = can(regex("^arn:aws:acm:", var.certificate_arn))
-    error_message = "certificate_arn deve ser um ARN de certificado ACM."
-  }
+variable "enable_waf" {
+  description = "WAF regional no ALB. Padrao false: o ALB e interno e o WAF de borda (escopo CLOUDFRONT) ja inspeciona o cliente. Um WAF regional veria so o IP do CloudFront e cobraria de novo."
+  type        = bool
+  default     = false
 }
 
 variable "deletion_protection" {
@@ -52,6 +48,17 @@ variable "waf_rate_limit" {
   validation {
     condition     = var.waf_rate_limit >= 100 && var.waf_rate_limit <= 2000000000
     error_message = "waf_rate_limit deve respeitar o minimo de 100 da AWS."
+  }
+}
+
+variable "stage_path_prefix" {
+  description = "Nome do stage do API Gateway, sem barra. Quando preenchido, a regra tambem aceita /<stage><path> e reescreve tirando esse prefixo. Vazio nao altera o path."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = var.stage_path_prefix == "" || can(regex("^[a-zA-Z0-9]+$", var.stage_path_prefix))
+    error_message = "stage_path_prefix e o nome do stage, sem barra."
   }
 }
 

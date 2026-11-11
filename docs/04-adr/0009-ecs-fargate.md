@@ -5,7 +5,7 @@
 
 ## Contexto e problema
 
-Os dois processos Java precisam rodar em `sa-east-1`, em pelo menos duas zonas, com deploy repetível, escala horizontal e sem uma frota de máquina para patchar. O pico de CPU é baixo (ρ ≈ 17% com duas tasks no consolidado).
+Os dois processos Java precisam rodar em `us-east-1` ([ADR 0021](0021-regiao-us-east-1.md)), em pelo menos duas zonas, com deploy repetível, escala horizontal e sem uma frota de máquina para patchar. O pico de CPU é baixo (ρ ≈ 17% com duas tasks no consolidado). O [ADR 0026](0026-ecs-agora-eks-evolucao.md) mantém esta decisão e registra o EKS como evolução.
 
 ## Drivers
 
@@ -37,7 +37,7 @@ Os dois processos Java precisam rodar em `sa-east-1`, em pelo menos duas zonas, 
 
 Cluster único, um service por microsserviço. Em produção o lançamentos sobe com 0,5 vCPU e 1 GiB (mínimo 2, máximo 6) e o consolidado com 1 vCPU e 2 GiB (mínimo 2, máximo 10). Aplicação e sidecar ADOT dividem esse tamanho. Escala por target tracking de CPU (60%) e de `ALBRequestCountPerTarget` nos dois. O consolidado soma target tracking do backlog da fila (`mensagens visíveis / tasks em execução`, alvo de 20). Deployment circuit breaker com rollback. Container Insights. Dev usa tasks menores e uma task por serviço. Os números estão em `infra/terraform/envs/*/terraform.tfvars.example`.
 
-- Positivo: sem nó para administrar, task spread nas AZs, encaixe direto com ALB target group, IAM por task role, imagem OCI padrão. ARM no Fargate de `sa-east-1` custa USD 0,0557 por vCPU-hora e USD 0,00612 por GB-hora (tabela de outubro de 2026), abaixo da hora x86 da mesma família.
+- Positivo: sem nó para administrar, task spread nas AZs, encaixe direto com ALB target group, IAM por task role, imagem OCI padrão. ARM no Fargate de `us-east-1` custa USD 0,03238 por vCPU-hora e USD 0,00356 por GB-hora (Price List, vigência 2026-10-01), abaixo da hora x86 da mesma família. Em `sa-east-1` os mesmos SKUs são USD 0,05570 e USD 0,00612.
 - Negativo: menos controle de kernel e de daemon. Sidecar come parte da CPU contratada — por isso o consolidado, que segura o pico de 50 req/s, fica em 1 vCPU e não em 0,25. O lançamentos, com 20 escritas/s, cabe em 0,5 vCPU. Cold start de task nova é da ordem de dezenas de segundos; o mínimo de 2 tasks em prod existe para não depender de scale-from-zero no pico. Fargate não fica de graça parado. O exemplo de dev não desliga a task sozinho.
 
 ## Decisão

@@ -4,9 +4,8 @@ import br.com.fluxocaixa.consolidado.application.consulta.SaldoDiarioConsulta;
 import br.com.fluxocaixa.consolidado.application.port.in.ConsultarSaldoDiarioUseCase;
 import br.com.fluxocaixa.consolidado.application.port.out.CacheSaldoPort;
 import br.com.fluxocaixa.consolidado.application.port.out.ConsultaSaldoPort;
-import br.com.fluxocaixa.consolidado.domain.model.MovimentoDia;
+import br.com.fluxocaixa.consolidado.domain.model.MovimentoAcumulado;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Objects;
 import java.util.UUID;
@@ -26,15 +25,10 @@ public final class ConsultarSaldoDiarioService implements ConsultarSaldoDiarioUs
         Objects.requireNonNull(comercianteId, "comercianteId");
         Objects.requireNonNull(data, "data");
         return cache.obterDia(comercianteId, data).orElseGet(() -> {
-            SaldoDiarioConsulta saldo = carregar(comercianteId, data);
+            MovimentoAcumulado acumulado = consulta.buscarDia(comercianteId, data);
+            SaldoDiarioConsulta saldo = SaldoDiarioConsulta.de(acumulado.movimento(), acumulado.saldoAcumulado());
             cache.armazenarDia(comercianteId, data, saldo);
             return saldo;
         });
-    }
-
-    private SaldoDiarioConsulta carregar(UUID comercianteId, LocalDate data) {
-        MovimentoDia movimento = consulta.buscarDia(comercianteId, data).orElseGet(() -> MovimentoDia.vazio(data));
-        BigDecimal acumulado = consulta.saldoAcumuladoAte(comercianteId, data);
-        return SaldoDiarioConsulta.de(movimento, acumulado);
     }
 }

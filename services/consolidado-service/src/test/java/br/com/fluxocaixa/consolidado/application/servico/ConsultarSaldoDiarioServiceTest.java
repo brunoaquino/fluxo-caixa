@@ -4,6 +4,8 @@ import br.com.fluxocaixa.consolidado.application.consulta.RelatorioPeriodoConsul
 import br.com.fluxocaixa.consolidado.application.consulta.SaldoDiarioConsulta;
 import br.com.fluxocaixa.consolidado.application.port.out.CacheSaldoPort;
 import br.com.fluxocaixa.consolidado.application.port.out.ConsultaSaldoPort;
+import br.com.fluxocaixa.consolidado.domain.model.LinhaRelatorio;
+import br.com.fluxocaixa.consolidado.domain.model.MovimentoAcumulado;
 import br.com.fluxocaixa.consolidado.domain.model.MovimentoDia;
 import org.junit.jupiter.api.Test;
 
@@ -11,6 +13,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -25,7 +28,8 @@ class ConsultarSaldoDiarioServiceTest {
 
     @Test
     void diaSemMovimentoRetornaZerosComSaldoAcumuladoAnterior() {
-        ConsultaSaldoPort consulta = new ConsultaFixa(Optional.empty(), new BigDecimal("80.00"));
+        ConsultaSaldoPort consulta = new ConsultaFixa(
+                new MovimentoAcumulado(MovimentoDia.vazio(data), new BigDecimal("80.00")));
         ConsultarSaldoDiarioService servico = new ConsultarSaldoDiarioService(consulta, cache);
 
         SaldoDiarioConsulta saldo = servico.consultar(comerciante, data);
@@ -59,7 +63,7 @@ class ConsultarSaldoDiarioServiceTest {
                 2,
                 Instant.parse("2026-11-10T15:00:00Z"));
         ConsultarSaldoDiarioService servico = new ConsultarSaldoDiarioService(
-                new ConsultaFixa(Optional.of(movimento), new BigDecimal("130.00")),
+                new ConsultaFixa(new MovimentoAcumulado(movimento, new BigDecimal("130.00"))),
                 cache);
 
         SaldoDiarioConsulta saldo = servico.consultar(comerciante, data);
@@ -73,45 +77,25 @@ class ConsultarSaldoDiarioServiceTest {
     private static final class ConsultaProibida implements ConsultaSaldoPort {
 
         @Override
-        public Optional<MovimentoDia> buscarDia(UUID comercianteId, LocalDate data) {
+        public MovimentoAcumulado buscarDia(UUID comercianteId, LocalDate data) {
             throw new AssertionError("não deveria consultar o banco");
         }
 
         @Override
-        public BigDecimal saldoAcumuladoAte(UUID comercianteId, LocalDate data) {
-            throw new AssertionError("não deveria consultar o banco");
-        }
-
-        @Override
-        public BigDecimal saldoAcumuladoAntesDe(UUID comercianteId, LocalDate data) {
-            throw new AssertionError("não deveria consultar o banco");
-        }
-
-        @Override
-        public Map<LocalDate, MovimentoDia> buscarNoPeriodo(UUID comercianteId, LocalDate inicio, LocalDate fim) {
+        public List<LinhaRelatorio> buscarPeriodo(UUID comercianteId, LocalDate inicio, LocalDate fim) {
             throw new AssertionError("não deveria consultar o banco");
         }
     }
 
-    private record ConsultaFixa(Optional<MovimentoDia> dia, BigDecimal acumulado) implements ConsultaSaldoPort {
+    private record ConsultaFixa(MovimentoAcumulado dia) implements ConsultaSaldoPort {
 
         @Override
-        public Optional<MovimentoDia> buscarDia(UUID comercianteId, LocalDate data) {
+        public MovimentoAcumulado buscarDia(UUID comercianteId, LocalDate data) {
             return dia;
         }
 
         @Override
-        public BigDecimal saldoAcumuladoAte(UUID comercianteId, LocalDate data) {
-            return acumulado;
-        }
-
-        @Override
-        public BigDecimal saldoAcumuladoAntesDe(UUID comercianteId, LocalDate data) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Map<LocalDate, MovimentoDia> buscarNoPeriodo(UUID comercianteId, LocalDate inicio, LocalDate fim) {
+        public List<LinhaRelatorio> buscarPeriodo(UUID comercianteId, LocalDate inicio, LocalDate fim) {
             throw new UnsupportedOperationException();
         }
     }

@@ -1,6 +1,6 @@
 # Observabilidade com OpenTelemetry, ADOT, CloudWatch e X-Ray
 
-- **Status:** Aceito
+- **Status:** Aceito. A propagação do contexto pela fila está no [ADR 0025](0025-rastreabilidade-contexto.md). A comparação com SaaS e com stack self-hosted está no [ADR 0027](0027-observabilidade-oss-vs-saas.md).
 - **Data:** 2026-11-10
 
 ## Contexto e problema

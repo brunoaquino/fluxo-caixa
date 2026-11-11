@@ -45,10 +45,12 @@ public class LancamentoRepositorioJpa implements LancamentoRepositorio {
 
     @Override
     public Pagina<Lancamento> listarPorData(UUID comercianteId, LocalDate data, int pagina, int tamanho) {
+        int paginaLimitada = Math.max(0, Math.min(pagina, 1000));
+        int tamanhoLimitado = Math.max(1, Math.min(tamanho, 100));
         var resultado = springData.findByComercianteIdAndDataLancamentoOrderByCriadoEmAsc(
                 comercianteId,
                 data,
-                PageRequest.of(pagina, tamanho)
+                PageRequest.of(paginaLimitada, tamanhoLimitado)
         );
         var conteudo = resultado.getContent().stream().map(MapeadorLancamento::paraDominio).toList();
         return new Pagina<>(

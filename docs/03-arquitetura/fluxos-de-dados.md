@@ -10,22 +10,46 @@ O POST termina no commit local. A publicação é outro fluxo.
 sequenceDiagram
   autonumber
   participant U as Comerciante
-  participant A as ALB
+  participant CF as CloudFront
+  participant G as API Gateway
+  participant A as ALB interno
   participant L as lancamentos-service
   participant P as Postgres lancamentos
-  U->>A: POST /api/v1/lancamentos
+  U->>CF: POST /api/v1/lancamentos TLS no edge
+  CF->>G: HTTPS, Host do execute-api, X-Origin-Verify
+  G->>G: WAF regional, authorizer Cognito, validator
+  G->>A: VPC Link v2, path sem o stage
   A->>L: encaminha com JWT
-  L->>L: valida escopo claim e Dinheiro
+  L->>L: valida JWT de novo, escopo, claim e Dinheiro
   L->>P: BEGIN
   L->>P: INSERT lancamento
-  L->>P: INSERT outbox_eventos publicado_em nulo
+  L->>P: INSERT outbox com trace_parent e correlation_id
   L->>P: INSERT idempotencia
   P-->>L: COMMIT
-  L-->>A: 201 e corpo do recurso
-  A-->>U: 201
+  L-->>A: 201 e X-Correlation-Id
+  A-->>G: 201
+  G-->>CF: 201
+  CF-->>U: 201
 ```
 
 Se o header `Idempotency-Key` repetir a mesma requisição, o fluxo para no `SELECT` da idempotência e devolve 200, sem segundo insert.
+
+Token inválido não chega na task:
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant U as Comerciante
+  participant CF as CloudFront
+  participant G as API Gateway
+  U->>CF: POST /api/v1/lancamentos com Bearer invalido
+  CF->>G: repassa Authorization e acrescenta X-Origin-Verify
+  G->>G: authorizer Cognito recusa o token
+  G-->>CF: 401
+  CF-->>U: 401
+```
+
+O WAF regional responde 403 se o header `X-Origin-Verify` não for o atual nem o anterior. Esse caso é chamada direta ao `execute-api`, não o comerciante passando pelo CloudFront. O serviço continua validando o JWT de quem passou: o gateway não substitui o resource server.
 
 ## 2. Outbox relay
 
@@ -39,7 +63,7 @@ sequenceDiagram
   loop a cada 500 ms
     R->>P: SELECT lote 100 FOR UPDATE SKIP LOCKED
     P-->>R: linhas com publicado_em nulo
-    R->>S: Publish JSON v1 e atributo eventType
+    R->>S: Publish JSON v1 e atributos eventType traceparent correlationId
     S->>Q: entrega raw message delivery
     S-->>R: message id
     R->>P: UPDATE publicado_em e COMMIT

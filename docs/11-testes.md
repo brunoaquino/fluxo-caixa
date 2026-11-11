@@ -95,22 +95,22 @@ Falha de ArchUnit, de teste de estorno ou de contrato do evento quebra o build. 
 
 Ambiente: `make up` neste repositório, um container de cada serviço, Postgres 17, Redis 7, LocalStack, Keycloak e `grafana/otel-lgtm`. Não é a topologia de duas tasks da AWS e não substitui o cenário de 10 minutos da seção de carga do [documento 05](05-requisitos-nao-funcionais.md).
 
-`make test`: `lancamentos-service` 46 testes, `consolidado-service` 43 testes, os dois com `BUILD SUCCESS` (unidade, ArchUnit e Testcontainers).
+`make test`: `lancamentos-service` 68 testes, `consolidado-service` 68 testes, os dois com `BUILD SUCCESS` (unidade, ArchUnit e Testcontainers).
 
-`make smoke`: crédito 150, débito 40 e estorno do débito. Saldo consolidado do dia convergiu para `150.00`.
+`make smoke`: crédito 150, débito 40 e estorno do débito. Saldo consolidado do dia `2026-11-10` convergiu para `150.00`.
 
 `make resiliencia`: com o consolidado parado, os dois POST responderam 201. Depois de religar, o saldo do dia `2099-01-15` convergiu para 7 (10 de crédito e 3 de débito).
 
-Carga, 1 minuto, k6 local (`DURATION=1m POST_RATE=1 k6 run tests/load/consolidado-pico.js`): 50 GET/s no consolidado e 1 POST/s no lançamentos.
+Carga, 1 minuto, k6 local (`DURATION=1m POST_RATE=2 k6 run tests/load/consolidado-pico.js`): 50 GET/s no consolidado e 2 POST/s no lançamentos. 3.121 iterações, 3.122 requisições HTTP (a sobra é o token do setup).
 
 | Métrica | Consolidado (GET) | Lançamentos (POST) | Total |
 |---|---:|---:|---:|
-| Taxa de erro HTTP | 0,00% | 0,00% | 0,00% (0 de 3.063) |
-| p95 | 6,19 ms | 19,91 ms | 6,74 ms |
-| p99 | 9,48 ms | 22,86 ms | 14,86 ms |
-| Checks | 100% `consolidado 200` | 100% `lancamento aceito` | 3.063/3.063 |
+| Taxa de erro HTTP | 0,00% | 0,00% | 0,00% (0 de 3.122) |
+| p95 | 5,58 ms | 20,37 ms | 6,86 ms |
+| p99 | 6,95 ms | 21,94 ms | 14,98 ms |
+| Checks | 100% `consolidado 200` | 100% `lancamento aceito` | 3.122/3.122 |
 
-Os limiares do script passaram (`p95` do consolidado abaixo de 100 ms, `p95` do lançamentos abaixo de 500 ms, erro abaixo de 5%). O Grafana em `localhost:3000` recebeu traces dos dois serviços no Tempo (`service.name` = `lancamentos-service` e `consolidado-service`). `/actuator/prometheus` e o Swagger UI responderam nos dois serviços.
+Os limiares do script passaram (`p95` do consolidado abaixo de 100 ms, `p95` do lançamentos abaixo de 500 ms, erro abaixo de 5%). O trace comum desta rodada está no [documento 07](07-observabilidade.md): `traceId` `5c31753c7c9eebe969f69289ba632f8f`, com spans de `lancamentos` e `consolidado` no Tempo. `/actuator/prometheus` e o Swagger UI respondem no perfil `local`. No perfil `aws` o Swagger fica desligado.
 
 ## 7. Lacunas conscientes
 

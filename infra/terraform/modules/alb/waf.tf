@@ -1,6 +1,10 @@
+# Desligado por padrao. O WAF que enxerga o cliente fica no CloudFront.
+# Aqui o IP de origem seria o prefix list do CloudFront, e a regra rate-based perderia o sentido.
 resource "aws_wafv2_web_acl" "this" {
+  count = var.enable_waf ? 1 : 0
+
   name        = "${var.name_prefix}-alb"
-  description = "Managed rules e limite por IP na frente do ALB."
+  description = "WAF regional opcional. Nao use junto com o WAF de escopo CLOUDFRONT."
   scope       = "REGIONAL"
 
   default_action {
@@ -129,6 +133,8 @@ resource "aws_wafv2_web_acl" "this" {
 }
 
 resource "aws_wafv2_web_acl_association" "alb" {
+  count = var.enable_waf ? 1 : 0
+
   resource_arn = aws_lb.this.arn
-  web_acl_arn  = aws_wafv2_web_acl.this.arn
+  web_acl_arn  = aws_wafv2_web_acl.this[0].arn
 }

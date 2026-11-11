@@ -45,4 +45,4 @@ O blueprint continua sendo a fonte do contrato (nomes, portas, JSON). O ADR é a
 
 ### Negativas
 
-- Vinte arquivos para manter alinhados ao código. Uma decisão implementada diferente do ADR é defeito de documentação, tratado como defeito.
+- Trinta arquivos para manter alinhados ao código. Uma decisão implementada diferente do ADR é defeito de documentação, tratado como defeito. Decisão substituída permanece no repositório com status Superseded.

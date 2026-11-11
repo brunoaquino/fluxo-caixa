@@ -1,4 +1,12 @@
 locals {
+  # O caller pode sobrescrever OTEL_PROPAGATORS. O default injeta W3C e X-Ray.
+  environment_map = merge(
+    {
+      OTEL_PROPAGATORS = var.otel_propagators
+    },
+    var.environment,
+  )
+
   adot_config = templatefile("${path.module}/adot-config.yaml.tftpl", {
     region            = var.aws_region
     metrics_log_group = var.metrics_log_group_name
@@ -18,7 +26,7 @@ locals {
         }
       ]
       environment = [
-        for key, value in var.environment : {
+        for key, value in local.environment_map : {
           name  = key
           value = value
         }
@@ -59,7 +67,11 @@ locals {
       {
         name  = "ADOT_CONFIG_REVISION"
         value = sha256(local.adot_config)
-      }
+      },
+      {
+        name  = "OTEL_PROPAGATORS"
+        value = "tracecontext,xray"
+      },
     ]
     secrets = [
       {
@@ -156,12 +168,27 @@ resource "aws_vpc_security_group_egress_rule" "dns_tcp" {
 }
 
 resource "aws_vpc_security_group_egress_rule" "endpoints" {
+  count = var.vpc_endpoint_security_group_id == null ? 0 : 1
+
   security_group_id            = aws_security_group.service.id
   referenced_security_group_id = var.vpc_endpoint_security_group_id
   description                  = "HTTPS para os VPC endpoints."
   from_port                    = 443
   to_port                      = 443
   ip_protocol                  = "tcp"
+}
+
+# Dev nao cria interface endpoint (secao 15). A task sem IP publico sai para as APIs AWS pelo NAT.
+#trivy:ignore:AVD-AWS-0104
+resource "aws_vpc_security_group_egress_rule" "nat_https" {
+  count = var.vpc_endpoint_security_group_id == null ? 1 : 0
+
+  security_group_id = aws_security_group.service.id
+  description       = "HTTPS de APIs AWS pelo NAT, sem interface endpoint."
+  cidr_ipv4         = "0.0.0.0/0"
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
 }
 
 resource "aws_ecs_task_definition" "this" {
@@ -201,8 +228,17 @@ resource "aws_ecs_service" "this" {
   cluster          = var.cluster_arn
   task_definition  = aws_ecs_task_definition.this.arn
   desired_count    = var.desired_count
-  launch_type      = "FARGATE"
   platform_version = "LATEST"
+
+  dynamic "capacity_provider_strategy" {
+    for_each = var.capacity_provider_strategy
+
+    content {
+      capacity_provider = capacity_provider_strategy.value.capacity_provider
+      weight            = capacity_provider_strategy.value.weight
+      base              = capacity_provider_strategy.value.base
+    }
+  }
 
   availability_zone_rebalancing      = "ENABLED"
   enable_execute_command             = var.enable_execute_command

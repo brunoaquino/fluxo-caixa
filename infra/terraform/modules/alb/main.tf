@@ -6,9 +6,13 @@ locals {
   region     = data.aws_region.current.region
 }
 
+data "aws_ec2_managed_prefix_list" "cloudfront" {
+  name = "com.amazonaws.global.cloudfront.origin-facing"
+}
+
 resource "aws_security_group" "alb" {
   name        = "${var.name_prefix}-alb"
-  description = "Entrada publica 80 e 443. A saida e aberta pelo modulo do servico, so na porta do target."
+  description = "Entrada somente do prefix list do CloudFront. A saida e aberta pelo modulo do servico, so na porta do target."
   vpc_id      = var.vpc_id
 
   tags = {
@@ -16,35 +20,21 @@ resource "aws_security_group" "alb" {
   }
 }
 
-#trivy:ignore:AVD-AWS-0107
-#checkov:skip=CKV_AWS_260:ALB publico. Este listener so existe para redirecionar HTTP para HTTPS.
-resource "aws_vpc_security_group_ingress_rule" "http" {
+resource "aws_vpc_security_group_ingress_rule" "cloudfront" {
   security_group_id = aws_security_group.alb.id
-  description       = "HTTP publico, redirecionado para HTTPS."
-  cidr_ipv4         = "0.0.0.0/0"
+  description       = "HTTP vindo apenas dos edges CloudFront (VPC Origin)."
+  prefix_list_id    = data.aws_ec2_managed_prefix_list.cloudfront.id
   from_port         = 80
   to_port           = 80
   ip_protocol       = "tcp"
 }
 
-#trivy:ignore:AVD-AWS-0107
-#checkov:skip=CKV_AWS_260:ALB publico. O WAF e o TLS ficam na frente dos servicos.
-resource "aws_vpc_security_group_ingress_rule" "https" {
-  security_group_id = aws_security_group.alb.id
-  description       = "HTTPS publico."
-  cidr_ipv4         = "0.0.0.0/0"
-  from_port         = 443
-  to_port           = 443
-  ip_protocol       = "tcp"
-}
-
-#trivy:ignore:AVD-AWS-0053
 resource "aws_lb" "this" {
   name                       = "${var.name_prefix}-alb"
   load_balancer_type         = "application"
-  internal                   = false
+  internal                   = true
   security_groups            = [aws_security_group.alb.id]
-  subnets                    = var.public_subnet_ids
+  subnets                    = var.subnet_ids
   drop_invalid_header_fields = true
   enable_deletion_protection = var.deletion_protection
   enable_http2               = true
@@ -90,28 +80,12 @@ resource "aws_lb_target_group" "service" {
   }
 }
 
+# TLS termina no CloudFront. O trecho ate o ALB interno atravessa a rede da AWS, sem IP publico.
+#trivy:ignore:AVD-AWS-0054
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.this.arn
   port              = 80
   protocol          = "HTTP"
-
-  default_action {
-    type = "redirect"
-
-    redirect {
-      port        = "443"
-      protocol    = "HTTPS"
-      status_code = "HTTP_301"
-    }
-  }
-}
-
-resource "aws_lb_listener" "https" {
-  load_balancer_arn = aws_lb.this.arn
-  port              = 443
-  protocol          = "HTTPS"
-  ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
-  certificate_arn   = var.certificate_arn
 
   default_action {
     type = "fixed-response"
@@ -127,7 +101,7 @@ resource "aws_lb_listener" "https" {
 resource "aws_lb_listener_rule" "service" {
   for_each = var.services
 
-  listener_arn = aws_lb_listener.https.arn
+  listener_arn = aws_lb_listener.http.arn
   priority     = each.value.priority
 
   action {
@@ -137,7 +111,27 @@ resource "aws_lb_listener_rule" "service" {
 
   condition {
     path_pattern {
-      values = each.value.path_patterns
+      values = var.stage_path_prefix == "" ? each.value.path_patterns : concat(
+        each.value.path_patterns,
+        [for pattern in each.value.path_patterns : "/${var.stage_path_prefix}${pattern}"],
+      )
+    }
+  }
+
+  # A integracao privada do REST inclui o stage no path (/v1/api/v1/...).
+  # Sem match, o ALB entrega o path original. Com match, so o prefixo do stage sai.
+  dynamic "transform" {
+    for_each = var.stage_path_prefix == "" ? [] : [var.stage_path_prefix]
+
+    content {
+      type = "url-rewrite"
+
+      url_rewrite_config {
+        rewrite {
+          regex   = "^/${transform.value}(/.*)$"
+          replace = "$1"
+        }
+      }
     }
   }
 }

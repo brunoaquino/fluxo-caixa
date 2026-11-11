@@ -2,10 +2,10 @@
 
 ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 COMPOSE := docker compose -f $(ROOT)/infra/local/docker-compose.yml --project-directory $(ROOT)/infra/local
-TF_DEV := $(ROOT)/infra/terraform/envs/dev
-TF_PROD := $(ROOT)/infra/terraform/envs/prod
+ENV ?= dev
+TF_ENV := $(ROOT)/infra/terraform/envs/$(ENV)
 
-.PHONY: help infra-up infra-down up down logs test token smoke resiliencia load tf-fmt tf-validate
+.PHONY: help infra-up infra-down up down logs test token smoke resiliencia load tf-fmt tf-validate tf-init tf-plan tf-test
 
 help:
 	@printf '%s\n' \
@@ -20,7 +20,10 @@ help:
 		'resiliencia    Escrita com o consolidado parado e convergencia depois' \
 		'load           Pico de 50 req/s no consolidado com k6' \
 		'tf-fmt         terraform fmt -recursive' \
-		'tf-validate    init -backend=false e validate em dev e prod'
+		'tf-init        terraform init -backend-config=backend.hcl (ENV=dev|hml|prod)' \
+		'tf-plan        terraform plan do ENV' \
+		'tf-validate    fmt -check e validate em bootstrap, dev, hml e prod' \
+		'tf-test        terraform test dos modulos criticos'
 
 infra-up:
 	$(COMPOSE) --profile infra up -d
@@ -56,7 +59,24 @@ load:
 tf-fmt:
 	terraform fmt -recursive $(ROOT)/infra/terraform
 
+tf-init:
+	cd $(TF_ENV) && terraform init -backend-config=backend.hcl
+
+tf-plan:
+	cd $(TF_ENV) && terraform plan -out=$(ENV).tfplan
+
 tf-validate:
 	terraform fmt -recursive -check $(ROOT)/infra/terraform
-	cd $(TF_DEV) && terraform init -backend=false && terraform validate
-	cd $(TF_PROD) && terraform init -backend=false && terraform validate
+	cd $(ROOT)/infra/terraform/bootstrap && terraform init -backend=false && terraform validate
+	cd $(ROOT)/infra/terraform/envs/dev && terraform init -backend=false && terraform validate
+	cd $(ROOT)/infra/terraform/envs/hml && terraform init -backend=false && terraform validate
+	cd $(ROOT)/infra/terraform/envs/prod && terraform init -backend=false && terraform validate
+
+tf-test:
+	terraform -chdir=$(ROOT)/infra/terraform/modules/messaging test
+	terraform -chdir=$(ROOT)/infra/terraform/modules/network test
+	terraform -chdir=$(ROOT)/infra/terraform/modules/alb test
+	terraform -chdir=$(ROOT)/infra/terraform/modules/ecs-service test
+	terraform -chdir=$(ROOT)/infra/terraform/modules/rds-postgres test
+	terraform -chdir=$(ROOT)/infra/terraform/modules/edge test
+	terraform -chdir=$(ROOT)/infra/terraform/modules/api-gateway test

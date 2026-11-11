@@ -50,3 +50,14 @@ Os serviços usam o hostname da rede do compose (`postgres`, `redis`, `localstac
 Na IDE, com `make infra-up`, troque os hostnames por `localhost` e a fila por `http://localhost:4566/000000000000/consolidado-lancamentos-queue`. O resto do contrato está na seção 10 do blueprint.
 
 O script de init do Postgres roda só na primeira subida do volume. Para recriar bancos e realm: `docker compose -f infra/local/docker-compose.yml --profile infra down -v`.
+
+## Trace e correlation id no Grafana
+
+Os serviços exportam trace OTLP para o `otel-lgtm` (Tempo) com `OTEL_PROPAGATORS=tracecontext,baggage`. O header `X-Correlation-Id` é da aplicação: volta na resposta e entra no log JSON como `correlationId`, junto com `traceId` e `spanId`.
+
+O Alloy lê o stdout dos containers pelo socket do Docker e entrega no Loki do `otel-lgtm` (`http://otel-lgtm:3100`). No Grafana (`http://localhost:3000`, `admin`/`admin`):
+
+- Tempo: serviço `lancamentos` ou `consolidado`.
+- Loki: `{container="fluxo-caixa-lancamentos"} | json | traceId="<id>"` ou `correlationId="<uuid>"`.
+
+O `traceId` do log é o mesmo do Tempo. Sem o Alloy, o trace continua no Tempo e o log fica só no `docker compose logs`.

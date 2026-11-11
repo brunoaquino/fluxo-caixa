@@ -6,7 +6,8 @@ Dois microsserviços alinhados a bounded contexts, com CQRS entre a escrita de l
 
 ```mermaid
 flowchart LR
-  cliente["Cliente HTTPS"] --> alb["ALB + WAF"]
+  cliente["Cliente HTTPS"] --> cf["CloudFront e WAF"]
+  cf --> alb["ALB interno"]
   alb --> lanc["lancamentos-service"]
   alb --> cons["consolidado-service"]
   lanc --> dbl[("RDS lancamentos")]
@@ -86,9 +87,9 @@ Cada serviço é dono do seu esquema e, em produção, da sua instância RDS. N�
 Há dois mecanismos com o mesmo nome, e eles não se misturam.
 
 - **De deploy (ECS).** Circuit breaker com rollback automático se as tasks novas não ficam saudáveis. [ADR 0020](../04-adr/0020-estrategia-de-deploy.md).
-- **De aplicação.** Não há Resilience4j. O starter `resilience4j-spring-boot4` disponível na época desta entrega depende do autoconfigure do Boot 4.0 e não entrou no classpath do Boot 4.1. O relay espaça a republicação com `outbox_eventos.proxima_tentativa_em` (backoff exponencial até 60 s). Redis, Hikari, Tomcat e o cliente SQS têm timeout curto. Falha de Redis não abre circuito: a leitura segue no Postgres. Não existe circuit breaker entre lançamentos e consolidado porque não existe chamada entre eles.
+- **De aplicação (Resilience4j 2.4.0).** CircuitBreaker, Retry com jitter e TimeLimiter no cliente SNS do relay. Circuito aberto adia o lote; o evento fica na outbox. No consolidado, CircuitBreaker no Redis com fallback no Postgres, e Bulkhead no consumidor. Não existe circuito entre lançamentos e consolidado porque não existe chamada entre eles. [ADR 0023](../04-adr/0023-resilience4j-e-versoes.md).
 
-**Trade-off.** Sem breaker de cliente, uma indisponibilidade do SNS não falha rápido dentro do POST — o POST nem chama o SNS. O custo fica no relay, limitado pelo backoff e pelo lote de 100. Timeout mal calibrado no Redis transforma lentidão em miss, que é o comportamento desejado.
+**Trade-off.** O POST continua sem chamar o SNS. O circuito protege o relay, não a latência do 201. Timeout mal calibrado no Redis transforma lentidão em fallback, que é o comportamento desejado. Boot 4.1 fica bloqueado até o starter do Resilience4j declarar suporte.
 
 ### Bulkhead
 
@@ -108,11 +109,11 @@ Base `/api/v1`. Erro em `application/problem+json`. Evolução do evento por `ev
 
 **Trade-off.** URIs de problema e versões são contrato para sempre. O ganho é cliente que distingue 409 de estorno de 400 de payload sem parsear texto livre.
 
-### Borda ALB + WAF, JWT no serviço
+### Borda CloudFront, WAF e ALB interno, JWT no serviço
 
-O ALB roteia `/api/v1/lancamentos*` e `/api/v1/consolidados*` para target groups diferentes e manda o health check em `/actuator/health/readiness`. O WAF aplica managed rules e rate-based. O JWT é validado no serviço, igual no Keycloak local e no Cognito.
+CloudFront é a única entrada pública. O WAF é de escopo `CLOUDFRONT`. O ALB é interno, alcançado por VPC Origin, e roteia `/api/v1/lancamentos*` e `/api/v1/consolidados*` para target groups diferentes. Health check em `/actuator/health/readiness`. `/api/*` não é cacheado. O JWT é validado no serviço, igual no Keycloak local e no Cognito.
 
-**Trade-off.** O ALB não vende API key nem transformation. Não precisamos disso. API Gateway seria um hop e uma conta a mais, e um authorizer só na borda deixaria o serviço nu se alguém alcançasse a task. [ADR 0018](../04-adr/0018-borda-alb-waf.md).
+**Trade-off.** O CloudFront não reduz carga de API, porque a resposta autenticada não se cacheia. O ganho é TLS no edge, Shield Standard e ALB sem IP público. API Gateway continua um hop e uma conta a mais, e um authorizer só na borda deixaria o serviço nu se alguém alcançasse a task. [ADR 0022](../04-adr/0022-cloudfront-vpc-origin.md).
 
 ### BFF / API Gateway — considerado e não adotado
 

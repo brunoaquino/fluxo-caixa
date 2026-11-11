@@ -36,9 +36,9 @@ Nada desta lista está no caminho do RNF crítico. Cada item diz qual dor o traz
 
 ## 6. Multi-região active-passive
 
-**Dor.** Indisponibilidade longa de `sa-east-1`. O RTO atual não cobre a região.
+**Dor.** Indisponibilidade longa de `us-east-1`. O RTO atual não cobre a região.
 
-**Como.** Piloto em outra região brasileira se houver, senão a decisão jurídica de sair do país vem antes do Terraform. Postgres com réplica lógica ou snapshot replicado, fila regional (SNS não é mágico entre regiões sem desenho), e um único escritor. Active-active de lançamento é conflito de saldo; não é o primeiro passo. O [ADR 0019](04-adr/0019-regiao-sa-east-1-lgpd.md) já recusou isso no dia 1 pelo custo e pelo dado.
+**Como.** Piloto com um único escritor, Postgres com réplica lógica ou snapshot replicado, fila regional (SNS não atravessa região sozinho). Active-active de lançamento é conflito de saldo. O secundário no Brasil exige a volta de residência descrita no [ADR 0021](04-adr/0021-regiao-us-east-1.md), com o delta de custo do [documento 08](08-custos.md). O ADR 0021 já recusou multi-região no dia 1.
 
 ## 7. Kafka / MSK
 
@@ -62,13 +62,13 @@ Nada desta lista está no caminho do RNF crítico. Cada item diz qual dor o traz
 
 **Dor.** Nasce quando existir tela que compõe extrato e saldo e esconde os dois paths.
 
-**Como.** BFF na frente, serviços onde estão. O Gateway, recusado no [ADR 0018](04-adr/0018-borda-alb-waf.md), volta a fazer sentido com throttling por parceiro e plano de uso. O JWT continua validado no serviço.
+**Como.** BFF na frente, serviços onde estão. O Gateway, recusado no [ADR 0022](04-adr/0022-cloudfront-vpc-origin.md), volta a fazer sentido com throttling por parceiro e plano de uso. O JWT continua validado no serviço. A distribuição CloudFront já é o lugar do front estático, com S3 e Origin Access Control, sem segundo domínio de borda.
 
 ## 11. FinOps
 
 **Dor.** A estimativa de [custos](08-custos.md) vai descolar da fatura no primeiro mês, sobretudo NAT, endpoint e log.
 
-**Como.** Budget com alerta em 50% e 80% do previsto (USD 1.214 em prod, na conta do Terraform). Tag obrigatória `system=fluxo-caixa` e `env`. Revisão mensal das três linhas que realmente pesam: endpoint, NAT e RDS. Rightsizing do RDS pelo credit balance, não pelo palpite. Isso é processo, e o Terraform já nasce com a tag.
+**Como.** Budget com alerta em 50% e 80% do previsto (USD 777 em prod, USD 356 em hml e USD 143 em dev, na conta do [documento 08](08-custos.md), ambientes 24×7). Tag obrigatória `system=fluxo-caixa` e `env`. Revisão mensal das três linhas que realmente pesam: endpoint, NAT e RDS. Rightsizing do RDS pelo credit balance, não pelo palpite. Infracost no pull request, como no [documento 14](14-cicd-e-qualidade.md). Isso é processo, e o Terraform já nasce com a tag.
 
 ## 12. Feature flags
 

@@ -25,7 +25,11 @@ public class LogDeRequisicao implements HandlerInterceptor, WebMvcConfigurer {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-        log.info("Requisição {} {}", request.getMethod(), request.getRequestURI());
         return true;
+    }
+
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+        log.info("Requisição {} {} status={}", request.getMethod(), request.getRequestURI(), response.getStatus());
     }
 }

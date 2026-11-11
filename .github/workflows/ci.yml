@@ -4,12 +4,16 @@ on:
   pull_request:
     paths:
       - "services/**"
-      - ".github/workflows/ci.yml"
+      - "infra/**"
+      - ".github/**"
+      - "Makefile"
   push:
     branches: [main, master]
     paths:
       - "services/**"
-      - ".github/workflows/ci.yml"
+      - "infra/**"
+      - ".github/**"
+      - "Makefile"
 
 permissions:
   contents: read
@@ -36,6 +40,8 @@ jobs:
           cache: maven
           cache-dependency-path: services/${{ matrix.service }}/pom.xml
 
+      # JaCoCo roda dentro do verify do Maven. O relatorio vai para target/site/jacoco
+      # e segue como artefato para o Sonar e para a revisao do PR.
       - name: Testes e verificacao
         working-directory: services/${{ matrix.service }}
         run: ./mvnw -B verify
@@ -51,6 +57,59 @@ jobs:
             services/${{ matrix.service }}/target/failsafe-reports/**
             services/${{ matrix.service }}/target/site/jacoco/**
 
+      # SCA no codigo e nas dependencias Maven. Trivy fs no lugar do OWASP Dependency-Check:
+      # ja esta no pipeline, nao pede chave da NVD e olha o pom junto com o que o verify gerou.
+      - name: SCA com Trivy no filesystem
+        uses: aquasecurity/trivy-action@0.36.0
+        with:
+          scan-type: fs
+          scan-ref: services/${{ matrix.service }}
+          format: table
+          exit-code: "1"
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+
+      # SBOM CycloneDX via syft, anexado ao job para saber o que entrou na build.
+      - name: SBOM CycloneDX
+        uses: anchore/sbom-action@v0
+        with:
+          path: services/${{ matrix.service }}
+          format: cyclonedx-json
+          output-file: sbom-${{ matrix.service }}.cdx.json
+
+      - name: Publicar SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ matrix.service }}
+          path: sbom-${{ matrix.service }}.cdx.json
+
+      # SonarCloud so roda quando o repositorio tem o token e a organizacao.
+      # Sem isso o job continua verde num fork ou num repo publico sem a conta.
+      - id: sonar-gate
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
+        run: |
+          if [ -n "$SONAR_TOKEN" ] && [ -n "$SONAR_ORGANIZATION" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "SonarCloud ignorado. Defina SONAR_TOKEN e vars.SONAR_ORGANIZATION."
+          fi
+
+      - name: SonarCloud
+        if: steps.sonar-gate.outputs.run == 'true'
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
+        with:
+          projectBaseDir: services/${{ matrix.service }}
+          args: >
+            -Dsonar.projectKey=${{ vars.SONAR_ORGANIZATION }}_${{ matrix.service }}
+            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
 
@@ -65,10 +124,64 @@ jobs:
           outputs: type=oci,tar=false,dest=/tmp/${{ matrix.service }}
 
       - name: Scan Trivy
-        uses: aquasecurity/trivy-action@v0.36.0
+        uses: aquasecurity/trivy-action@0.36.0
         with:
           input: /tmp/${{ matrix.service }}
           format: table
           exit-code: "1"
           severity: CRITICAL,HIGH
           ignore-unfixed: true
+
+  # SAST do codigo Java. O build depois do init e o que o CodeQL instrumenta.
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: java
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+
+      - name: Build para o CodeQL
+        run: |
+          ./services/lancamentos-service/mvnw -f services/lancamentos-service/pom.xml -B -DskipTests package
+          ./services/consolidado-service/mvnw -f services/consolidado-service/pom.xml -B -DskipTests package
+
+      - uses: github/codeql-action/analyze@v3
+
+  # Segredos no historico do git. Nao substitui a revisao, mas pega token commitado.
+  gitleaks:
+    name: Gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # So em PR: compara o manifesto de dependencias com a base e bloqueia as conhecidas como vulneraveis.
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/dependency-review-action@v4

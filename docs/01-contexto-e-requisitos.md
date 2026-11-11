@@ -23,8 +23,8 @@ Premissas explícitas, porque o enunciado não fixa volume de escrita, número d
 | P6 | Hit ratio de cache no pico ≥ 80%. O dia corrente e a semana recente concentram as consultas. | Pool JDBC e SLO de latência |
 | P7 | Há um operador (ou integração) por comerciante. Não há, nesta versão, papel de contador enxergando vários comerciantes. | Fora de escopo de autorização |
 | P8 | Consistência do saldo é eventual, com meta p95 &lt; 5 s entre o commit do lançamento e o reflexo na leitura. | SLO do blueprint |
-| P9 | Ambiente diário de desenvolvimento é local (Docker). Conta AWS de dev é opcional. | Custo |
-| P10 | Região de produção: `sa-east-1`. Dados de caixa não saem do Brasil. | LGPD, ADR 0019 |
+| P9 | Ambiente diário de desenvolvimento é local (Docker). A conta AWS tem `dev`, `hml` e `prod`; dev não é o lugar onde se codifica o dia. | Custo, ADR 0029 |
+| P10 | Região: `us-east-1`. Transferência internacional com salvaguarda (cláusulas-padrão e DPA da AWS). Residência no Brasil volta a ser requisito só por contrato ou norma, com o custo do documento 08. | LGPD art. 33, ADR 0021 |
 
 ## 3. Glossário (linguagem ubíqua)
 
@@ -199,8 +199,8 @@ Metas herdadas do blueprint e tornadas mensuráveis. O detalhamento de SLI, erro
 | RNF-11 | Segurança | OAuth2/OIDC, escopo, tenant no token, TLS, criptografia em repouso | [06](06-seguranca.md) |
 | RNF-12 | Observabilidade | Trace único atravessando HTTP, outbox e SQS; alarme de DLQ e de lag | [07](07-observabilidade.md) |
 | RNF-13 | Manutenibilidade | Domínio sem framework; ArchUnit; API `/api/v1`; evento com `eventVersion` | [ADR 0008](04-adr/0008-arquitetura-hexagonal.md), [ADR 0017](04-adr/0017-api-rest-versionada-rfc9457.md) |
-| RNF-14 | Custo | Produção enxuta para o volume real, região `sa-east-1` | [08](08-custos.md): cerca de USD 1.214/mês no que o Terraform de prod cria |
-| RNF-15 | LGPD | Dados de caixa no Brasil, minimização, trilha imutável | [ADR 0019](04-adr/0019-regiao-sa-east-1-lgpd.md) |
+| RNF-14 | Custo | Produção enxuta para o volume real, região `us-east-1` | [08](08-custos.md): cerca de USD 777/mês em prod |
+| RNF-15 | LGPD | Transferência internacional com salvaguarda, minimização, trilha imutável | [ADR 0021](04-adr/0021-regiao-us-east-1.md) |
 | RNF-16 | Escalabilidade | Horizontal, no mínimo 2 tasks em AZs distintas, auto scaling por CPU e requisições | [05](05-requisitos-nao-funcionais.md) |
 
 Error budget mensal (30 dias = 43.200 min):
@@ -229,7 +229,7 @@ Error budget mensal (30 dias = 43.200 min):
 - Papel multi-comerciante (contador, franqueadora).
 - Event sourcing como persistência do lançamento. O estado atual é uma linha; o evento é de integração.
 - Active-active em duas regiões.
-- BFF e API Gateway. A borda desta versão é ALB + WAF ([ADR 0018](04-adr/0018-borda-alb-waf.md)).
+- BFF e API Gateway. A borda desta versão é CloudFront, WAF e ALB interno ([ADR 0022](04-adr/0022-cloudfront-vpc-origin.md)).
 
 Esses itens estão priorizados em [evoluções futuras](10-evolucoes-futuras.md).
 

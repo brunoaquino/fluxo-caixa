@@ -1,14 +1,23 @@
-# Exemplo de deploy. Nao roda em pull request.
-# Antes de usar, crie um Environment no GitHub (dev e prod) com:
-#   vars.AWS_DEPLOY_ROLE_ARN  role assumida via OIDC
-# A role precisa de ecr:GetAuthorizationToken, push nos repositorios
-# fluxo-caixa-<env>/lancamentos e fluxo-caixa-<env>/consolidado,
-# ecs:DescribeTaskDefinition, RegisterTaskDefinition, UpdateService e iam:PassRole
-# nas roles de execucao e de task.
+# Deploy por OIDC. Nao ha chave de longa duracao no GitHub.
 #
-# O Terraform e a fonte da task definition (variaveis de ambiente e secrets).
-# Este fluxo so troca a imagem. No proximo terraform apply, alinhe image_tag
-# com a tag publicada, senao o apply volta a revisao anterior.
+# O job so comeca se a variavel de repositorio AWS_CD_ENABLED for "true".
+# Sem isso o workflow termina verde: um fork ou o repositorio publico nao falha
+# por falta de conta AWS.
+#
+# Build uma vez, na conta de dev, com tag = SHA. Hml e prod recebem a mesma
+# imagem pelo digest (crane copy), sem rebuild. A assinatura e cosign keyless
+# (Fulcio + Rekor) usando o OIDC do GitHub.
+#
+# O rollback e o deployment circuit breaker do servico ECS, criado pelo Terraform
+# (enable + rollback). Este fluxo espera a estabilidade. Se o circuit breaker
+# reverte, o wait falha o job.
+#
+# Environments no GitHub:
+#   dev  sem revisor, deploy automatico no push da main
+#   hml e prod com revisor obrigatorio, so por workflow_dispatch
+# Cada environment define vars.AWS_DEPLOY_ROLE_ARN.
+# Promocao entre contas: vars.DEV_ECR_REGISTRY com o host do ECR de dev
+# e permissao de pull dessa role sobre o repositorio de origem.
 
 name: CD
 
@@ -19,26 +28,113 @@ on:
         description: Ambiente
         required: true
         type: choice
-        options: [dev, prod]
+        options: [dev, hml, prod]
       image_tag:
-        description: Tag imutavel. Vazio usa o SHA do commit.
+        description: Tag imutavel ja publicada no dev. Vazio no dev faz um build novo.
         required: false
         type: string
+        default: ""
   push:
-    tags: ["v*"]
+    branches: [main]
 
 permissions:
   id-token: write
   contents: read
 
 concurrency:
-  group: cd-${{ github.ref }}
+  group: cd-${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'dev' }}
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  gate:
     runs-on: ubuntu-latest
-    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'prod' }}
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
+    steps:
+      - id: check
+        env:
+          FLAG: ${{ vars.AWS_CD_ENABLED }}
+        run: |
+          if [ "$FLAG" = "true" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "AWS_CD_ENABLED diferente de true. CD ignorado."
+          fi
+
+  build:
+    needs: gate
+    if: needs.gate.outputs.enabled == 'true' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.environment == 'dev' && inputs.image_tag == ''))
+    runs-on: ubuntu-latest
+    environment: dev
+    outputs:
+      registry: ${{ steps.ecr.outputs.registry }}
+      tag: ${{ steps.meta.outputs.tag }}
+      digest_lancamentos: ${{ steps.build-lancamentos.outputs.digest }}
+      digest_consolidado: ${{ steps.build-consolidado.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Role de deploy
+        env:
+          ROLE: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+        run: |
+          if [ -z "$ROLE" ]; then
+            echo "Environment dev sem vars.AWS_DEPLOY_ROLE_ARN"
+            exit 1
+          fi
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - id: meta
+        run: echo "tag=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - id: build-lancamentos
+        name: Build lancamentos
+        uses: docker/build-push-action@v6
+        with:
+          context: services/lancamentos-service
+          file: services/lancamentos-service/Dockerfile
+          platforms: linux/arm64
+          push: true
+          provenance: false
+          sbom: false
+          tags: ${{ steps.ecr.outputs.registry }}/fluxo-caixa-dev/lancamentos:${{ github.sha }}
+
+      - id: build-consolidado
+        name: Build consolidado
+        uses: docker/build-push-action@v6
+        with:
+          context: services/consolidado-service
+          file: services/consolidado-service/Dockerfile
+          platforms: linux/arm64
+          push: true
+          provenance: false
+          sbom: false
+          tags: ${{ steps.ecr.outputs.registry }}/fluxo-caixa-dev/consolidado:${{ github.sha }}
+
+      # Assinatura keyless. O certificado sai do OIDC do GitHub, sem chave privada no repo.
+      - uses: sigstore/cosign-installer@v3
+
+      - name: Assinar as imagens
+        run: |
+          cosign sign --yes "${{ steps.ecr.outputs.registry }}/fluxo-caixa-dev/lancamentos@${{ steps.build-lancamentos.outputs.digest }}"
+          cosign sign --yes "${{ steps.ecr.outputs.registry }}/fluxo-caixa-dev/consolidado@${{ steps.build-consolidado.outputs.digest }}"
+
+  deploy-dev:
+    needs: [gate, build]
+    if: always() && needs.gate.outputs.enabled == 'true' && (needs.build.result == 'success' || needs.build.result == 'skipped') && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.environment == 'dev'))
+    runs-on: ubuntu-latest
+    environment: dev
     strategy:
       fail-fast: false
       matrix:
@@ -47,37 +143,38 @@ jobs:
             container: lancamentos
           - service: consolidado
             container: consolidado
-    env:
-      AWS_REGION: sa-east-1
-      DEPLOY_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'prod' }}
-      IMAGE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.image_tag != '' && inputs.image_tag || github.sha }}
     steps:
       - uses: actions/checkout@v4
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: us-east-1
 
       - id: ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
-
-      - name: Build e push ARM64
-        uses: docker/build-push-action@v6
-        with:
-          context: services/${{ matrix.service }}-service
-          file: services/${{ matrix.service }}-service/Dockerfile
-          platforms: linux/arm64
-          push: true
-          tags: ${{ steps.ecr.outputs.registry }}/fluxo-caixa-${{ env.DEPLOY_ENV }}/${{ matrix.service }}:${{ env.IMAGE_TAG }}
+      - name: Resolver digest
+        id: image
+        env:
+          BUILT: ${{ matrix.service == 'lancamentos' && needs.build.outputs.digest_lancamentos || needs.build.outputs.digest_consolidado }}
+          TAG: ${{ inputs.image_tag != '' && inputs.image_tag || needs.build.outputs.tag }}
+        run: |
+          if [ -n "$BUILT" ]; then
+            echo "digest=$BUILT" >> "$GITHUB_OUTPUT"
+          else
+            digest=$(aws ecr describe-images \
+              --repository-name "fluxo-caixa-dev/${{ matrix.service }}" \
+              --image-ids "imageTag=${TAG}" \
+              --query 'imageDetails[0].imageDigest' \
+              --output text)
+            echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Baixar task definition atual
         run: |
           aws ecs describe-task-definition \
-            --task-definition "fluxo-caixa-${DEPLOY_ENV}-${{ matrix.service }}" \
+            --task-definition "fluxo-caixa-dev-${{ matrix.service }}" \
             --query taskDefinition \
             > task-definition.json
 
@@ -86,11 +183,148 @@ jobs:
         with:
           task-definition: task-definition.json
           container-name: ${{ matrix.container }}
-          image: ${{ steps.ecr.outputs.registry }}/fluxo-caixa-${{ env.DEPLOY_ENV }}/${{ matrix.service }}:${{ env.IMAGE_TAG }}
+          image: ${{ steps.ecr.outputs.registry }}/fluxo-caixa-dev/${{ matrix.service }}@${{ steps.image.outputs.digest }}
 
       - uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.render.outputs.task-definition }}
-          service: fluxo-caixa-${{ env.DEPLOY_ENV }}-${{ matrix.service }}
-          cluster: fluxo-caixa-${{ env.DEPLOY_ENV }}-cluster
+          service: fluxo-caixa-dev-${{ matrix.service }}
+          cluster: fluxo-caixa-dev-cluster
           wait-for-service-stability: true
+
+      - name: Deployments se o wait falhar
+        if: failure()
+        run: |
+          aws ecs describe-services \
+            --cluster fluxo-caixa-dev-cluster \
+            --services "fluxo-caixa-dev-${{ matrix.service }}" \
+            --query 'services[0].deployments'
+
+      - name: Smoke da borda
+        if: success() && matrix.service == 'lancamentos'
+        env:
+          SMOKE_BASE_URL: ${{ vars.SMOKE_BASE_URL }}
+        run: |
+          if [ -z "$SMOKE_BASE_URL" ]; then
+            echo "SMOKE_BASE_URL ausente. Smoke HTTP ignorado."
+            exit 0
+          fi
+          code=$(curl -sS -o /dev/null -w "%{http_code}" "$SMOKE_BASE_URL/api/v1/lancamentos")
+          echo "HTTP $code"
+          case "$code" in
+            200|401|403) exit 0 ;;
+            *) exit 1 ;;
+          esac
+
+  deploy-promoted:
+    needs: gate
+    if: needs.gate.outputs.enabled == 'true' && github.event_name == 'workflow_dispatch' && (inputs.environment == 'hml' || inputs.environment == 'prod')
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: lancamentos
+            container: lancamentos
+          - service: consolidado
+            container: consolidado
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tag obrigatoria
+        run: |
+          if [ -z "${{ inputs.image_tag }}" ]; then
+            echo "Informe image_tag com o SHA publicado no dev."
+            exit 1
+          fi
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Instalar crane
+        run: |
+          curl -fsSL -o /tmp/crane.tar.gz https://github.com/google/go-containerregistry/releases/download/v0.20.6/go-containerregistry_Linux_x86_64.tar.gz
+          tar -xzf /tmp/crane.tar.gz -C /tmp crane
+          sudo mv /tmp/crane /usr/local/bin/crane
+
+      - id: image
+        name: Copiar o digest para o ambiente
+        env:
+          SOURCE_REGISTRY: ${{ vars.DEV_ECR_REGISTRY }}
+          TAG: ${{ inputs.image_tag }}
+          ENV_NAME: ${{ inputs.environment }}
+        run: |
+          src_reg="${SOURCE_REGISTRY:-${{ steps.ecr.outputs.registry }}}"
+          src="${src_reg}/fluxo-caixa-dev/${{ matrix.service }}:${TAG}"
+          dest="${{ steps.ecr.outputs.registry }}/fluxo-caixa-${ENV_NAME}/${{ matrix.service }}:${TAG}"
+          crane copy "$src" "$dest"
+          digest=$(crane digest "$dest")
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+
+      - uses: sigstore/cosign-installer@v3
+
+      - name: Assinar a copia
+        env:
+          ENV_NAME: ${{ inputs.environment }}
+        run: |
+          cosign sign --yes "${{ steps.ecr.outputs.registry }}/fluxo-caixa-${ENV_NAME}/${{ matrix.service }}@${{ steps.image.outputs.digest }}"
+
+      - name: Baixar task definition atual
+        env:
+          ENV_NAME: ${{ inputs.environment }}
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition "fluxo-caixa-${ENV_NAME}-${{ matrix.service }}" \
+            --query taskDefinition \
+            > task-definition.json
+
+      - id: render
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        env:
+          ENV_NAME: ${{ inputs.environment }}
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ matrix.container }}
+          image: ${{ steps.ecr.outputs.registry }}/fluxo-caixa-${{ inputs.environment }}/${{ matrix.service }}@${{ steps.image.outputs.digest }}
+
+      - uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        env:
+          ENV_NAME: ${{ inputs.environment }}
+        with:
+          task-definition: ${{ steps.render.outputs.task-definition }}
+          service: fluxo-caixa-${{ inputs.environment }}-${{ matrix.service }}
+          cluster: fluxo-caixa-${{ inputs.environment }}-cluster
+          wait-for-service-stability: true
+
+      - name: Deployments se o wait falhar
+        if: failure()
+        env:
+          ENV_NAME: ${{ inputs.environment }}
+        run: |
+          aws ecs describe-services \
+            --cluster "fluxo-caixa-${ENV_NAME}-cluster" \
+            --services "fluxo-caixa-${ENV_NAME}-${{ matrix.service }}" \
+            --query 'services[0].deployments'
+
+      # 401 sem token significa que a borda e a API responderam. 5xx falha o job.
+      - name: Smoke da borda
+        if: success() && matrix.service == 'lancamentos'
+        env:
+          SMOKE_BASE_URL: ${{ vars.SMOKE_BASE_URL }}
+        run: |
+          if [ -z "$SMOKE_BASE_URL" ]; then
+            echo "SMOKE_BASE_URL ausente. Smoke HTTP ignorado."
+            exit 0
+          fi
+          code=$(curl -sS -o /dev/null -w "%{http_code}" "$SMOKE_BASE_URL/api/v1/lancamentos")
+          echo "HTTP $code"
+          case "$code" in
+            200|401|403) exit 0 ;;
+            *) exit 1 ;;
+          esac

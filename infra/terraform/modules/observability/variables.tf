@@ -70,6 +70,21 @@ variable "queue_age_threshold_seconds" {
   default     = 120
 }
 
+variable "rotation_secret_arns" {
+  description = "Secrets de banco cuja falha de rotacao deve ir para o topico de alertas. O mapa entra na descricao da regra para o apply esperar o secret existir."
+  type        = map(string)
+  default     = {}
+}
+
+variable "api_gateway" {
+  description = "API Gateway monitorada. Nulo nao cria alarme nem widget."
+  type = object({
+    api_name = string
+    stage    = string
+  })
+  default = null
+}
+
 variable "rds_instances" {
   description = "Instancias RDS monitoradas."
   type = map(object({

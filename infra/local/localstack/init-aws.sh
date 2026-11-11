@@ -3,7 +3,7 @@
 # Roda dentro do LocalStack quando os servicos SNS/SQS ficam prontos.
 set -euo pipefail
 
-REGION="${AWS_DEFAULT_REGION:-sa-east-1}"
+REGION="${AWS_DEFAULT_REGION:-us-east-1}"
 TOPIC_NAME="fluxo-caixa-lancamentos-events"
 QUEUE_NAME="consolidado-lancamentos-queue"
 DLQ_NAME="consolidado-lancamentos-dlq"

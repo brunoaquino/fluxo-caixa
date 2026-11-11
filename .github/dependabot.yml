@@ -1,0 +1,32 @@
+# Dependabot, e nao Renovate: um unico bot evita PR duplicado.
+# O Dependabot ja cobre Maven, Docker, GitHub Actions e Terraform sem app extra.
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /services/lancamentos-service
+    schedule:
+      interval: weekly
+  - package-ecosystem: maven
+    directory: /services/consolidado-service
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /services/lancamentos-service
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /services/consolidado-service
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /infra/local
+    schedule:
+      interval: weekly
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: terraform
+    directory: /infra/terraform
+    schedule:
+      interval: weekly

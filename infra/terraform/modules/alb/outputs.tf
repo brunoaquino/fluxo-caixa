@@ -9,7 +9,7 @@ output "alb_arn_suffix" {
 }
 
 output "alb_dns_name" {
-  description = "DNS publico do ALB."
+  description = "DNS interno do ALB. O CloudFront usa este nome na VPC Origin."
   value       = aws_lb.this.dns_name
 }
 
@@ -19,8 +19,8 @@ output "alb_zone_id" {
 }
 
 output "alb_url" {
-  description = "URL HTTPS do ALB."
-  value       = "https://${aws_lb.this.dns_name}"
+  description = "URL HTTP interna do ALB. A URL publica e a do CloudFront."
+  value       = "http://${aws_lb.this.dns_name}"
 }
 
 output "security_group_id" {
@@ -39,8 +39,8 @@ output "target_group_arn_suffixes" {
 }
 
 output "waf_arn" {
-  description = "ARN do Web ACL."
-  value       = aws_wafv2_web_acl.this.arn
+  description = "ARN do Web ACL regional. Nulo quando enable_waf e false."
+  value       = var.enable_waf ? aws_wafv2_web_acl.this[0].arn : null
 }
 
 output "access_logs_bucket" {

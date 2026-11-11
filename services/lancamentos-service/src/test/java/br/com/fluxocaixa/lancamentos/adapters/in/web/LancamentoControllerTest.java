@@ -9,6 +9,7 @@ import br.com.fluxocaixa.lancamentos.application.port.in.RegistrarLancamento;
 import br.com.fluxocaixa.lancamentos.application.resultado.Pagina;
 import br.com.fluxocaixa.lancamentos.application.resultado.ResultadoEscrita;
 import br.com.fluxocaixa.lancamentos.config.DecodificadorJwtConfig;
+import br.com.fluxocaixa.lancamentos.config.JacksonConfig;
 import br.com.fluxocaixa.lancamentos.config.EscritorDeProblema;
 import br.com.fluxocaixa.lancamentos.config.PropriedadesSeguranca;
 import br.com.fluxocaixa.lancamentos.config.SegurancaConfig;
@@ -45,12 +46,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = LancamentoController.class)
 @AutoConfigureMockMvc
-@Import({SegurancaConfig.class, DecodificadorJwtConfig.class, TratadorDeErros.class, ComercianteAutenticado.class, EscritorDeProblema.class})
+@Import({SegurancaConfig.class, DecodificadorJwtConfig.class, TratadorDeErros.class, ComercianteAutenticado.class, EscritorDeProblema.class, JacksonConfig.class})
 @EnableConfigurationProperties(PropriedadesSeguranca.class)
 @TestPropertySource(properties = {
         "JWT_ISSUER_URI=http://localhost/realms/fluxo-caixa",
         "JWT_JWK_SET_URI=http://127.0.0.1:9/jwks",
-        "LANCAMENTOS_TOPIC_ARN=arn:aws:sns:sa-east-1:000000000000:fluxo-caixa-lancamentos-events",
+        "LANCAMENTOS_TOPIC_ARN=arn:aws:sns:us-east-1:000000000000:fluxo-caixa-lancamentos-events",
         "DB_URL=jdbc:postgresql://localhost:1/lancamentos",
         "DB_USERNAME=lancamentos",
         "DB_PASSWORD=lancamentos"
@@ -89,7 +90,40 @@ class LancamentoControllerTest {
                 .andExpect(jsonPath("$.id").value(ID.toString()))
                 .andExpect(jsonPath("$.valor").value("150.00"))
                 .andExpect(jsonPath("$.moeda").value("BRL"))
-                .andExpect(jsonPath("$.tipo").value("CREDITO"));
+                .andExpect(jsonPath("$.tipo").value("CREDITO"))
+                .andExpect(header().string("X-Content-Type-Options", "nosniff"))
+                .andExpect(header().string("X-Frame-Options", "DENY"))
+                .andExpect(header().string("Referrer-Policy", "no-referrer"))
+                .andExpect(header().string("Cache-Control", org.hamcrest.Matchers.containsString("no-store")))
+                .andExpect(header().string("Permissions-Policy", org.hamcrest.Matchers.containsString("camera=()")))
+                .andExpect(header().doesNotExist("Access-Control-Allow-Origin"))
+                .andExpect(header().exists("X-Correlation-Id"));
+    }
+
+    @Test
+    void rejeitaCampoDesconhecidoECorpoGrande() throws Exception {
+        mockMvc.perform(post("/api/v1/lancamentos")
+                        .with(token("lancamentos:write"))
+                        .header("Origin", "https://evil.example")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"tipo":"CREDITO","valor":10.00,"dataLancamento":"2026-11-10","descricao":"Venda","comercianteId":"11111111-1111-1111-1111-111111111111"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("Corpo da requisição inválido"))
+                .andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
+
+        mockMvc.perform(post("/api/v1/lancamentos")
+                        .with(token("lancamentos:write"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"descricao\":\"" + "x".repeat(9000) + "\"}"))
+                .andExpect(status().isPayloadTooLarge());
+
+        mockMvc.perform(get("/api/v1/lancamentos")
+                        .with(token("lancamentos:read"))
+                        .param("data", "2026-11-10")
+                        .param("page", "1001"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

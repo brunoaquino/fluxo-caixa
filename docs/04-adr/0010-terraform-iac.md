@@ -1,6 +1,6 @@
 # Terraform como IaC
 
-- **Status:** Aceito
+- **Status:** Aceito. O [ADR 0029](0029-tres-ambientes-state-remoto.md) amplia os ambientes para `dev`, `hml` e `prod` e fixa o state em S3. A escolha do Terraform permanece.
 - **Data:** 2026-11-10
 
 ## Contexto e problema

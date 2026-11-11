@@ -15,13 +15,13 @@ variable "vpc_cidr" {
 }
 
 variable "az_count" {
-  description = "Quantidade de AZs. O blueprint fixa 3."
+  description = "Quantidade de AZs. Dev e hml usam 2. Prod usa 3."
   type        = number
   default     = 3
 
   validation {
-    condition     = var.az_count == 3
-    error_message = "A VPC do fluxo de caixa usa 3 AZs."
+    condition     = contains([2, 3], var.az_count)
+    error_message = "az_count deve ser 2 (dev/hml) ou 3 (prod)."
   }
 }
 
@@ -31,12 +31,12 @@ variable "nat_gateway_per_az" {
 }
 
 variable "interface_endpoint_az_count" {
-  description = "Em quantas AZs os interface endpoints sao criados. Dev pode usar 1 para reduzir custo; prod deve usar 3."
+  description = "AZs com interface endpoint. 0 faz a task sair para as APIs AWS pelo NAT. Hml usa 2 e prod usa 3."
   type        = number
 
   validation {
-    condition     = var.interface_endpoint_az_count >= 1 && var.interface_endpoint_az_count <= var.az_count
-    error_message = "interface_endpoint_az_count deve estar entre 1 e az_count."
+    condition     = var.interface_endpoint_az_count >= 0 && var.interface_endpoint_az_count <= var.az_count
+    error_message = "interface_endpoint_az_count deve estar entre 0 e az_count."
   }
 }
 

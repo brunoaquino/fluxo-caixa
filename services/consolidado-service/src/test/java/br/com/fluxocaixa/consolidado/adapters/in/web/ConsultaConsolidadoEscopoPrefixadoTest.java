@@ -28,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = ConsultaConsolidadoController.class)
 @ActiveProfiles("test")
 @TestPropertySource(properties = "app.security.scope-prefix=fluxo-caixa/")
-@Import({ConfiguracaoSeguranca.class, ComercianteAutenticado.class, JwtDecoderTesteConfig.class})
+@Import({ConfiguracaoSeguranca.class, ComercianteAutenticado.class, JwtDecoderTesteConfig.class, LimitadorPassThroughConfig.class})
 class ConsultaConsolidadoEscopoPrefixadoTest {
 
     @Autowired

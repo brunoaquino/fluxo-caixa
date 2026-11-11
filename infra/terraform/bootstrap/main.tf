@@ -1,11 +1,23 @@
 provider "aws" {
   region = var.aws_region
 
+  dynamic "assume_role" {
+    for_each = var.assume_role_arn == null ? [] : [var.assume_role_arn]
+
+    content {
+      role_arn     = assume_role.value
+      session_name = "terraform-fluxo-caixa-bootstrap"
+    }
+  }
+
   default_tags {
     tags = {
-      Project   = "fluxo-caixa"
-      Component = "terraform-state"
-      ManagedBy = "terraform"
+      Project     = "fluxo-caixa"
+      Environment = "shared"
+      Owner       = var.owner
+      CostCenter  = var.cost_center
+      ManagedBy   = "terraform"
+      Component   = "terraform-state"
     }
   }
 }
@@ -38,7 +50,8 @@ resource "aws_kms_alias" "state" {
 }
 
 resource "aws_s3_bucket" "state" {
-  bucket = var.bucket_name
+  bucket              = var.bucket_name
+  object_lock_enabled = var.enable_object_lock
 
   lifecycle {
     prevent_destroy = true
@@ -78,6 +91,43 @@ resource "aws_s3_bucket_ownership_controls" "state" {
 
   rule {
     object_ownership = "BucketOwnerEnforced"
+  }
+}
+
+# Lock nativo do S3 (use_lockfile, Terraform >= 1.10).
+# Nao criamos DynamoDB: o lock e um objeto .tflock no proprio bucket, sem tabela extra
+# nem custo de capacidade. DynamoDB so faz sentido em Terraform < 1.10.
+resource "aws_s3_bucket_lifecycle_configuration" "state" {
+  bucket = aws_s3_bucket.state.id
+
+  rule {
+    id     = "expirar-versoes-nao-correntes"
+    status = "Enabled"
+
+    filter {}
+
+    noncurrent_version_expiration {
+      noncurrent_days = var.noncurrent_version_expiration_days
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+  }
+
+  depends_on = [aws_s3_bucket_versioning.state]
+}
+
+resource "aws_s3_bucket_object_lock_configuration" "state" {
+  count = var.enable_object_lock ? 1 : 0
+
+  bucket = aws_s3_bucket.state.id
+
+  rule {
+    default_retention {
+      mode = "GOVERNANCE"
+      days = var.object_lock_retention_days
+    }
   }
 }
 

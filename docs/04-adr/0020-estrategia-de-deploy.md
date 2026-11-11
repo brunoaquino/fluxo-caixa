@@ -51,3 +51,5 @@ Migração incompatível não anda no mesmo release que o código que a exige. D
 
 - Readiness que sempre retorna 200 anula a decisão. O readiness do lançamentos verifica o banco; o do consolidado verifica o banco e, de forma degradada e explícita, não transforma Redis fora em “task morta” — senão uma falha de cache derrubaria todas as tasks em sequência. Redis fora é degradação, task segue pronta, métrica de erro do cache dispara.
 - Duas versões no ar durante minutos exigem disciplina de Flyway. Um `DROP COLUMN` no mesmo release do código que para de usá-la quebra a task antiga no meio do rolling.
+
+GitOps com ArgoCD, e blue/green com análise, ficam para o dia do EKS ([ADR 0028](0028-gitops-argocd-evolucao.md)). Não mudam o rolling deste ADR enquanto o scheduler for ECS.

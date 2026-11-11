@@ -12,30 +12,31 @@ spring:
     password: ${DB_PASSWORD:consolidado}
     hikari:
       pool-name: consolidado-pool
-      maximum-pool-size: 20
-      minimum-idle: 5
-      connection-timeout: 2000
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 3000
       validation-timeout: 1000
       idle-timeout: 30000
-      max-lifetime: 1800000
+      max-lifetime: 900000
       keepalive-time: 300000
+      connection-init-sql: SET statement_timeout = '3s'
   flyway:
     enabled: true
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-      timeout: 200ms
-      connect-timeout: 200ms
+      timeout: 300ms
+      connect-timeout: 300ms
       ssl:
         enabled: ${REDIS_SSL:false}
       lettuce:
         pool:
           enabled: true
-          max-active: 32
-          max-idle: 16
-          min-idle: 4
-          max-wait: 200ms
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+          max-wait: 300ms
   mvc:
     problemdetails:
       enabled: true
@@ -43,17 +44,22 @@ spring:
 server:
   port: ${SERVER_PORT:8082}
   shutdown: graceful
+  max-http-request-header-size: 16KB
   error:
     include-message: never
     include-stacktrace: never
     include-binding-errors: never
+    include-exception: never
   tomcat:
     connection-timeout: 5s
+    max-http-form-post-size: 1KB
+    max-swallow-size: 1KB
 
 app:
   security:
     comerciante-claim: ${APP_SECURITY_COMERCIANTE_CLAIM:comerciante_id}
     scope-prefix: ${APP_SECURITY_SCOPE_PREFIX:}
+    swagger-publico: false
     jwt:
       issuer-uri: ${JWT_ISSUER_URI:http://localhost:8080/realms/fluxo-caixa}
       jwk-set-uri: ${JWT_JWK_SET_URI:}
@@ -63,10 +69,15 @@ app:
     wait-time-seconds: 20
     max-messages: 10
   aws:
-    region: ${AWS_REGION:sa-east-1}
+    region: ${AWS_REGION:us-east-1}
     endpoint-url: ${AWS_ENDPOINT_URL:}
   cache:
     ttl: 30s
+  datasource:
+    secret-arn: ${DB_SECRET_ARN:}
+    reader-url: ${DB_READER_URL:}
+  resilience:
+    rate-limiter-habilitado: ${APP_RESILIENCE_RATE_LIMITER_HABILITADO:false}
 
 management:
   endpoints:
@@ -77,16 +88,30 @@ management:
     health:
       probes:
         enabled: true
-      show-details: never
+      show-details: always
+      show-components: always
+      status:
+        order: DOWN,OUT_OF_SERVICE,UP,UNKNOWN,CIRCUIT_OPEN,CIRCUIT_HALF_OPEN
+        http-mapping:
+          CIRCUIT_OPEN: 200
+          CIRCUIT_HALF_OPEN: 200
       group:
         readiness:
           include: readinessState,db
+          show-details: never
+        liveness:
+          include: livenessState
+          show-details: never
     info:
       access: unrestricted
     prometheus:
       access: unrestricted
   health:
     redis:
+      enabled: false
+    circuitbreakers:
+      enabled: true
+    ratelimiters:
       enabled: false
     livenessstate:
       enabled: true
@@ -95,6 +120,8 @@ management:
   tracing:
     sampling:
       probability: 1.0
+    propagation:
+      type: w3c
   opentelemetry:
     tracing:
       export:
@@ -127,3 +154,53 @@ springdoc:
     path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui.html
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      redis:
+        registerHealthIndicator: true
+        allowHealthIndicatorToFail: false
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        slowCallDurationThreshold: 300ms
+        slowCallRateThreshold: 80
+        waitDurationInOpenState: 15s
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        ignoreExceptions:
+          - io.github.resilience4j.circuitbreaker.CallNotPermittedException
+  timelimiter:
+    instances:
+      redis:
+        timeoutDuration: 300ms
+        cancelRunningFuture: true
+  bulkhead:
+    instances:
+      sqs-consumo:
+        maxConcurrentCalls: 8
+        maxWaitDuration: 2s
+  retry:
+    instances:
+      banco-consumo:
+        maxAttempts: 3
+        waitDuration: 50ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        exponentialMaxWaitDuration: 1s
+        enableRandomizedWait: true
+        randomizedWaitFactor: 0.5
+        retryExceptions:
+          - org.springframework.dao.TransientDataAccessException
+          - org.springframework.dao.DataAccessResourceFailureException
+          - org.springframework.transaction.CannotCreateTransactionException
+          - java.sql.SQLTransientException
+  ratelimiter:
+    instances:
+      consultas:
+        limitForPeriod: 50
+        limitRefreshPeriod: 1s
+        timeoutDuration: 0s
+        registerHealthIndicator: false

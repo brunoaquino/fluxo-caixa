@@ -21,12 +21,36 @@ resource "aws_security_group" "this" {
 resource "aws_db_parameter_group" "this" {
   name        = "${var.identifier}-pg"
   family      = "postgres17"
-  description = "Forca SSL no ${var.identifier}."
+  description = "SSL obrigatorio, pg_stat_statements e timeout no ${var.identifier}."
 
   parameter {
     name         = "rds.force_ssl"
     value        = "1"
     apply_method = "pending-reboot"
+  }
+
+  parameter {
+    name         = "shared_preload_libraries"
+    value        = "pg_stat_statements"
+    apply_method = "pending-reboot"
+  }
+
+  parameter {
+    name         = "pg_stat_statements.track"
+    value        = "all"
+    apply_method = "immediate"
+  }
+
+  parameter {
+    name         = "log_min_duration_statement"
+    value        = tostring(var.log_min_duration_statement_ms)
+    apply_method = "immediate"
+  }
+
+  parameter {
+    name         = "statement_timeout"
+    value        = tostring(var.statement_timeout_ms)
+    apply_method = "immediate"
   }
 }
 
@@ -41,9 +65,17 @@ resource "aws_db_instance" "this" {
   username = var.username
   port     = 5432
 
-  # A senha nao entra no Terraform. O RDS grava o JSON {username,password} no Secrets Manager.
-  manage_master_user_password   = true
-  master_user_secret_kms_key_id = var.kms_key_arn
+  # A senha nao entra no Terraform. O RDS grava o JSON {username,password} no Secrets Manager
+  # e rotaciona o secret. A agenda fica em rotation.tf.
+  manage_master_user_password   = var.manage_master_user_password
+  master_user_secret_kms_key_id = var.secret_kms_key_arn
+
+  lifecycle {
+    precondition {
+      condition     = var.read_replica_count == 0 || !var.manage_master_user_password
+      error_message = "A AWS nao cria read replica de RDS for PostgreSQL quando manage_master_user_password esta ligado (https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/rds-secrets-manager.html). Mantenha read_replica_count = 0. Alternativas compativeis com senha gerenciada: RDS Multi-AZ DB Cluster (2 standbys legiveis e reader endpoint) ou Aurora PostgreSQL com readers. A terceira saida e desligar a senha gerenciada e rotacionar por Lambda. No gatilho de leitura, a recomendacao e o Multi-AZ DB Cluster. Ver ADR 0030."
+    }
+  }
 
   allocated_storage     = var.allocated_storage
   max_allocated_storage = var.max_allocated_storage
@@ -68,7 +100,9 @@ resource "aws_db_instance" "this" {
 
   performance_insights_enabled          = true
   performance_insights_kms_key_id       = var.kms_key_arn
-  performance_insights_retention_period = 7
+  performance_insights_retention_period = var.performance_insights_retention_days
+  monitoring_interval                   = var.monitoring_interval
+  monitoring_role_arn                   = var.monitoring_interval > 0 ? aws_iam_role.monitoring[0].arn : null
 
   iam_database_authentication_enabled = true
   auto_minor_version_upgrade          = true

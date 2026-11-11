@@ -10,20 +10,26 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sns.SnsClient;
 
 import java.net.URI;
+import java.time.Duration;
 
 @Configuration
 public class AwsConfig {
 
     @Bean(destroyMethod = "close")
     SnsClient snsClient(
-            @Value("${AWS_REGION:sa-east-1}") String region,
+            @Value("${AWS_REGION:us-east-1}") String region,
             @Value("${AWS_ENDPOINT_URL:}") String endpoint,
             @Value("${AWS_ACCESS_KEY_ID:test}") String accessKey,
             @Value("${AWS_SECRET_ACCESS_KEY:test}") String secretKey
     ) {
         var construtor = SnsClient.builder()
                 .region(Region.of(region))
-                .httpClientBuilder(UrlConnectionHttpClient.builder());
+                .httpClientBuilder(UrlConnectionHttpClient.builder()
+                        .connectionTimeout(Duration.ofSeconds(2))
+                        .socketTimeout(Duration.ofSeconds(2)))
+                .overrideConfiguration(config -> config
+                        .apiCallTimeout(Duration.ofSeconds(2))
+                        .apiCallAttemptTimeout(Duration.ofSeconds(2)));
         if (endpoint != null && !endpoint.isBlank()) {
             construtor
                     .endpointOverride(URI.create(endpoint))

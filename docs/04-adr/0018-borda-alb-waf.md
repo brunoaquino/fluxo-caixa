@@ -1,7 +1,9 @@
 # Borda com ALB e AWS WAF
 
-- **Status:** Aceito
+- **Status:** Substituído (Superseded) pelo [ADR 0022](0022-cloudfront-vpc-origin.md)
 - **Data:** 2026-11-10
+
+O texto abaixo é o registro histórico do ALB público com WAF regional. A borda seguinte é o [ADR 0022](0022-cloudfront-vpc-origin.md); o [ADR 0031](0031-api-gateway-rest-regional.md) acrescenta a REST API regional na frente do ALB interno.
 
 ## Contexto e problema
 

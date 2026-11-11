@@ -82,6 +82,10 @@ workspace "Fluxo de Caixa" "Controle de lancamentos e saldo diario consolidado" 
                 tags "Queue"
             }
 
+            apiGateway = container "API Gateway" "REST regional. Authorizer Cognito, usage plan e validacao do corpo. Nao existe no laboratorio." "Amazon API Gateway" {
+                tags "LoadBalancer"
+            }
+
             lancamentos -> dbLancamentos "Le e grava" "JDBC"
             consolidado -> dbConsolidado "Le e grava a projecao" "JDBC"
             consolidado -> cache "Cache-aside" "protocolo Redis"
@@ -91,6 +95,10 @@ workspace "Fluxo de Caixa" "Controle de lancamentos e saldo diario consolidado" 
             fila -> consolidado "Consome" "long polling"
         }
 
+        comerciante -> apiGateway "Chama /api/v1 na AWS" "HTTPS via CloudFront"
+        apiGateway -> lancamentos "VPC Link v2" "HTTP_PROXY"
+        apiGateway -> consolidado "VPC Link v2" "HTTP_PROXY"
+        apiGateway -> identidade "Authorizer Cognito" "escopo por rota"
         comerciante -> lancamentos "Registra e consulta lancamentos" "HTTPS JSON /api/v1"
         comerciante -> consolidado "Consulta saldo diario e periodo" "HTTPS JSON /api/v1"
         lancamentos -> identidade "Valida o access token" "JWKS"
@@ -100,29 +108,44 @@ workspace "Fluxo de Caixa" "Controle de lancamentos e saldo diario consolidado" 
         prod = deploymentEnvironment "Production" {
             deploymentNode "AWS" "Conta de producao" "Amazon Web Services" {
                 tags "AWS"
-                deploymentNode "sa-east-1" "Regiao de Sao Paulo" "AWS Region" {
+                deploymentNode "us-east-1" "Regiao da Virginia. WAF e ACM do CloudFront moram aqui." "AWS Region" {
                     tags "Region"
+
+                    deploymentNode "Borda" "Distribuicao global. PoP GRU para o comerciante." "CloudFront" {
+                        infrastructureNode "CloudFront" "TLS no edge. Cache desligado em /api. Origem HTTPS do API Gateway." "Amazon CloudFront" {
+                            tags "LoadBalancer"
+                        }
+                        infrastructureNode "WAF" "Escopo CLOUDFRONT. Managed rules e rate-based" "AWS WAF" {
+                            tags "Security"
+                        }
+                        infrastructureNode "VPC Origin" "Caminho reserva quando enable_api_gateway e false" "CloudFront VPC Origin"
+                    }
+
+                    deploymentNode "API Gateway" "REST regional, stage v1. Nao e edge-optimized." "Amazon API Gateway" {
+                        containerInstance apiGateway
+                        infrastructureNode "WAF regional" "Bloqueia request sem X-Origin-Verify" "AWS WAF" {
+                            tags "Security"
+                        }
+                        infrastructureNode "VPC Link v2" "Integracao privada direto no ALB. Sem NLB." "VPC Link"
+                    }
 
                     deploymentNode "Cognito" "User Pool Essentials e Pre Token Generation v2" "Amazon Cognito" {
                         softwareSystemInstance identidade
                     }
 
-                    deploymentNode "VPC" "Tres zonas de disponibilidade" "Amazon VPC" {
-                        deploymentNode "Subnets publicas" "ALB e NAT" "Subnets" {
-                            deploymentNode "Borda" "TLS e filtragem" "ALB + WAF" {
-                                infrastructureNode "ALB" "Roteia /api/v1/lancamentos e /api/v1/consolidados" "Application Load Balancer" {
-                                    tags "LoadBalancer"
-                                }
-                                infrastructureNode "WAF" "Managed rules e rate-based" "AWS WAF" {
-                                    tags "Security"
-                                }
-                            }
-                            deploymentNode "NAT" "Um gateway por AZ" "NAT Gateway" {
+                    deploymentNode "VPC" "Tres zonas de disponibilidade em prod" "Amazon VPC" {
+                        deploymentNode "Subnets publicas" "So NAT. O ALB nao fica aqui." "Subnets" {
+                            deploymentNode "NAT" "Um gateway por AZ em prod" "NAT Gateway" {
                                 infrastructureNode "NAT Gateway" "Egress das tasks" "NAT Gateway"
                             }
                         }
 
                         deploymentNode "Subnets de aplicacao" "Tasks sem IP publico" "Subnets" {
+                            deploymentNode "ALB interno" "Sem IP publico. Aceita CloudFront e o security group do VPC Link. Reescreve o prefixo /v1." "Application Load Balancer" {
+                                infrastructureNode "ALB" "Roteia /api/v1/lancamentos e /api/v1/consolidados" "Application Load Balancer" {
+                                    tags "LoadBalancer"
+                                }
+                            }
                             deploymentNode "ECS Fargate" "Cluster unico, circuit breaker de deploy" "Amazon ECS" {
                                 deploymentNode "lancamentos" "Minimo de 2 tasks em AZs distintas" "Fargate ARM" {
                                     containerInstance lancamentos
@@ -155,10 +178,15 @@ workspace "Fluxo de Caixa" "Controle de lancamentos e saldo diario consolidado" 
                         containerInstance dlq
                     }
 
+                    deploymentNode "Segredos" "Rotacao automatica" "AWS Secrets Manager" {
+                        infrastructureNode "Segredos RDS" "30 dias em prod e hml, 90 em dev. Wrapper rebusca." "Secrets Manager"
+                        infrastructureNode "X-Origin-Verify" "current e previous. Lambda atualiza CloudFront e o WAF regional." "Secrets Manager"
+                    }
+
                     deploymentNode "Observabilidade" "Logs, metricas, traces e alarmes" "CloudWatch + X-Ray" {
-                        infrastructureNode "ADOT" "Sidecar em cada task" "AWS Distro for OpenTelemetry"
-                        infrastructureNode "CloudWatch" "Logs, metricas e alarmes" "Amazon CloudWatch"
-                        infrastructureNode "X-Ray" "Traces" "AWS X-Ray"
+                        infrastructureNode "ADOT" "Sidecar em cada task. Propaga traceparent." "AWS Distro for OpenTelemetry"
+                        infrastructureNode "CloudWatch" "Logs JSON, metricas e alarmes" "Amazon CloudWatch"
+                        infrastructureNode "X-Ray" "Trace unico do POST ao consumidor" "AWS X-Ray"
                     }
                 }
             }
@@ -223,7 +251,13 @@ workspace "Fluxo de Caixa" "Controle de lancamentos e saldo diario consolidado" 
             autolayout lr
         }
 
-        deployment fluxo prod "AWS" "Producao em sa-east-1." {
+        dynamic fluxo "TokenInvalido" "O authorizer recusa antes da VPC." {
+            comerciante -> apiGateway "POST com Bearer invalido"
+            apiGateway -> identidade "Cognito authorizer rejeita"
+            autolayout lr
+        }
+
+        deployment fluxo prod "AWS" "Producao em us-east-1, com CloudFront, API Gateway e ALB interno." {
             include *
             autolayout tb
         }

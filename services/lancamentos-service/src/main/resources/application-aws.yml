@@ -1,5 +1,19 @@
 # Profile aws: endpoint real (AWS_ENDPOINT_URL vazio) e credencial da task role.
 # APP_SECURITY_SCOPE_PREFIX=fluxo-caixa/ no Cognito.
+# DB_URL chega como jdbc:postgresql://. Com DB_SECRET_ARN o pool prefixa jdbc:aws-wrapper:
+# uma vez. Plugins: failover,awsSecretsManager na instância; só awsSecretsManager no RDS Proxy.
+# DB_READER_URL, se definida, manda @Transactional(readOnly = true) para o reader.
+# Swagger desligado: a borda não encaminha /v3 nem /swagger-ui, e o perfil não publica a UI.
+app:
+  security:
+    swagger-publico: false
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
 server:
   forward-headers-strategy: framework
 
@@ -7,3 +21,8 @@ management:
   endpoint:
     health:
       show-details: never
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/traces

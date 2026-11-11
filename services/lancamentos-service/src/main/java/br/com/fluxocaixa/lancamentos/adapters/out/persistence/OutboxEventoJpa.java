@@ -39,6 +39,15 @@ class OutboxEventoJpa {
     @Column(name = "proxima_tentativa_em", nullable = false)
     private Instant proximaTentativaEm;
 
+    @Column(name = "trace_parent", length = 55)
+    private String traceParent;
+
+    @Column(name = "trace_state", length = 512)
+    private String traceState;
+
+    @Column(name = "correlation_id", length = 36)
+    private String correlationId;
+
     protected OutboxEventoJpa() {
     }
 
@@ -49,7 +58,10 @@ class OutboxEventoJpa {
             String payload,
             Instant criadoEm,
             int tentativas,
-            Instant proximaTentativaEm
+            Instant proximaTentativaEm,
+            String traceParent,
+            String traceState,
+            String correlationId
     ) {
         this.id = id;
         this.aggregateId = aggregateId;
@@ -58,5 +70,8 @@ class OutboxEventoJpa {
         this.criadoEm = criadoEm;
         this.tentativas = tentativas;
         this.proximaTentativaEm = proximaTentativaEm;
+        this.traceParent = traceParent;
+        this.traceState = traceState;
+        this.correlationId = correlationId;
     }
 }

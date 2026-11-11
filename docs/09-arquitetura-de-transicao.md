@@ -90,7 +90,7 @@ Quando, por um ciclo de fechamento inteiro, o saldo novo e o legado empatam e ni
 
 1. Parar o CDC.
 2. Somente leitura no ERP por um período combinado (30 a 90 dias).
-3. Arquivar o banco legado. Não se migra esse arquivo para `us-east-1`.
+3. Arquivar o banco legado na mesma região da produção (`us-east-1`), com a mesma CMK e a mesma política de retenção. Não se cria uma cópia em `sa-east-1` para “trazer o arquivo de volta” sem uma decisão de residência.
 4. Remover o adaptador e a fila de sincronização.
 
 ## 5. Riscos e mitigação

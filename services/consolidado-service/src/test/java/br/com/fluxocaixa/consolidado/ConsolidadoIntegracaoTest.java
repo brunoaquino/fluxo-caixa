@@ -1,10 +1,17 @@
 package br.com.fluxocaixa.consolidado;
 
+import br.com.fluxocaixa.consolidado.adapters.in.messaging.ProcessadorEventoLancamento;
 import br.com.fluxocaixa.consolidado.config.JwtDecoderTesteConfig;
+import com.zaxxer.hikari.HikariDataSource;
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -13,6 +20,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+
+import javax.sql.DataSource;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -26,6 +35,7 @@ import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -35,6 +45,8 @@ import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.hamcrest.Matchers.containsString;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -43,6 +55,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Import(JwtDecoderTesteConfig.class)
+@ExtendWith(OutputCaptureExtension.class)
 class ConsolidadoIntegracaoTest {
 
     @Container
@@ -73,12 +86,12 @@ class ConsolidadoIntegracaoTest {
         registry.add("spring.data.redis.host", REDIS::getHost);
         registry.add("spring.data.redis.port", () -> REDIS.getMappedPort(6379));
         registry.add("app.aws.endpoint-url", () -> LOCALSTACK.getEndpoint().toString());
-        registry.add("app.aws.region", () -> "sa-east-1");
+        registry.add("app.aws.region", () -> "us-east-1");
         registry.add("app.messaging.consumo-habilitado", () -> "true");
         registry.add("app.messaging.wait-time-seconds", () -> "1");
         registry.add("app.messaging.max-messages", () -> "10");
         registry.add("app.messaging.queue-url", ConsolidadoIntegracaoTest::urlFila);
-        registry.add("management.tracing.export.otlp.enabled", () -> "false");
+        registry.add("management.tracing.sampling.probability", () -> "1.0");
     }
 
     @Autowired
@@ -90,11 +103,71 @@ class ConsolidadoIntegracaoTest {
     @Autowired
     private MeterRegistry meterRegistry;
 
+    @Autowired
+    private DataSource dataSource;
+
+    @Autowired
+    private CircuitBreakerRegistry circuitBreakerRegistry;
+
     @Test
     void probesNaoDependemDaFila() throws Exception {
         mockMvc.perform(get("/actuator/health/liveness")).andExpect(status().isOk());
         mockMvc.perform(get("/actuator/health/readiness")).andExpect(status().isOk());
-        mockMvc.perform(get("/actuator/prometheus")).andExpect(status().isOk());
+        mockMvc.perform(get("/actuator/prometheus"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("resilience4j_circuitbreaker")));
+    }
+
+    @Test
+    void semReaderUrlUsaDriverPostgresql() {
+        org.assertj.core.api.Assertions.assertThat(dataSource).isInstanceOf(HikariDataSource.class);
+        HikariDataSource hikari = (HikariDataSource) dataSource;
+        org.assertj.core.api.Assertions.assertThat(hikari.getDriverClassName()).isEqualTo("org.postgresql.Driver");
+        org.assertj.core.api.Assertions.assertThat(hikari.getJdbcUrl()).doesNotContain("aws-wrapper");
+    }
+
+    @Test
+    void circuitoAbertoNaoDerrubaReadiness() throws Exception {
+        CircuitBreaker circuito = circuitBreakerRegistry.circuitBreaker("redis");
+        circuito.transitionToOpenState();
+        try {
+            mockMvc.perform(get("/actuator/health/readiness")).andExpect(status().isOk());
+            mockMvc.perform(get("/actuator/health"))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString("OPEN")));
+        } finally {
+            circuito.reset();
+        }
+    }
+
+    @Test
+    void traceparentConhecidoApareceNoLogJson(CapturedOutput output) {
+        UUID comerciante = UUID.randomUUID();
+        UUID eventId = UUID.randomUUID();
+        String traceId = "4bf92f3577b34da6a3ce929d0e0e4736";
+        String correlationId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+        enviar(evento(eventId, UUID.randomUUID(), comerciante, "CREDITO", "15.00", "2026-11-10", null), Map.of(
+                "traceparent", "00-" + traceId + "-00f067aa0ba902b7-01",
+                "correlationId", correlationId));
+        await().atMost(40, SECONDS).until(() -> output.getAll().contains(traceId)
+                && output.getAll().contains(eventId.toString())
+                && output.getAll().contains(correlationId));
+        String tudo = output.getAll();
+        org.assertj.core.api.Assertions.assertThat(tudo).contains(ProcessadorEventoLancamento.LOG_EVENTO);
+        org.assertj.core.api.Assertions.assertThat(tudo).contains("\"traceId\"");
+        org.assertj.core.api.Assertions.assertThat(tudo).contains("\"correlationId\"");
+        org.assertj.core.api.Assertions.assertThat(tudo).contains("\"eventId\"");
+        org.assertj.core.api.Assertions.assertThat(tudo).doesNotContain("00f067aa0ba902b7");
+    }
+
+    @Test
+    void comercianteNaoVeSaldoDeOutro() {
+        UUID primeiro = UUID.randomUUID();
+        UUID segundo = UUID.randomUUID();
+        enviar(evento(UUID.randomUUID(), UUID.randomUUID(), primeiro, "CREDITO", "80.00", "2026-11-10", null));
+        enviar(evento(UUID.randomUUID(), UUID.randomUUID(), segundo, "CREDITO", "10.00", "2026-11-10", null));
+        aguardarDia(primeiro, "2026-11-10", 1, 80, 0, 80, 80);
+        aguardarDia(segundo, "2026-11-10", 1, 10, 0, 10, 10);
     }
 
     @Test
@@ -172,23 +245,31 @@ class ConsolidadoIntegracaoTest {
     }
 
     private static void enviar(String corpo) {
+        enviar(corpo, Map.of());
+    }
+
+    private static void enviar(String corpo, Map<String, String> extras) {
+        Map<String, MessageAttributeValue> atributos = new HashMap<>();
+        atributos.put("eventType", MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue("LancamentoRegistrado")
+                .build());
+        extras.forEach((chave, valor) -> atributos.put(chave, MessageAttributeValue.builder()
+                .dataType("String")
+                .stringValue(valor)
+                .build()));
         try (SqsClient cliente = cliente()) {
             cliente.sendMessage(pedido -> pedido
                     .queueUrl(urlFila())
                     .messageBody(corpo)
-                    .messageAttributes(Map.of(
-                            "eventType",
-                            MessageAttributeValue.builder()
-                                    .dataType("String")
-                                    .stringValue("LancamentoRegistrado")
-                                    .build())));
+                    .messageAttributes(atributos));
         }
     }
 
     private static SqsClient cliente() {
         return SqsClient.builder()
                 .endpointOverride(LOCALSTACK.getEndpoint())
-                .region(Region.of("sa-east-1"))
+                .region(Region.of("us-east-1"))
                 .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(
                         LOCALSTACK.getAccessKey(),
                         LOCALSTACK.getSecretKey())))

@@ -1,150 +1,190 @@
 # Terraform — fluxo de caixa na AWS
 
-Stack de `sa-east-1` para os serviços `lancamentos` e `consolidado`. Terraform `>= 1.10`, provider `hashicorp/aws ~> 6.0`. O state de cada ambiente é remoto, com lock nativo do S3 (`use_lockfile = true`, sem DynamoDB).
+Terraform `~> 1.14` e provider `hashicorp/aws ~> 6.72`. Região padrão `us-east-1`.
 
-Dev e prod são states separados. Dentro de um ambiente, rede, dados e compute ficam no mesmo state: o conjunto é pequeno e sobe junto. Se o stack crescer, o próximo corte natural é separar dados de compute.
+O state de cada ambiente é remoto, no S3, com lock nativo (`use_lockfile = true`). Não há tabela DynamoDB: a partir do Terraform 1.10 o lock é um objeto `.tflock` no próprio bucket. DynamoDB só faria sentido em runtime anterior a 1.10, e cobraria uma tabela à parte sem ganho de isolamento.
 
 ## Arquitetura
 
 ```
-Internet
-  -> ALB público (HTTPS, redirect 80) + WAF
-       /api/v1/lancamentos*   -> ECS lancamentos
-       /api/v1/consolidados*  -> ECS consolidado
-  -> tasks Fargate ARM64 em subnets de aplicação (mínimo 2 em prod, AZs diferentes)
-       lancamentos -> RDS próprio + SNS
-       consolidado -> RDS próprio + SQS + Valkey
-  SNS (raw delivery) -> SQS (visibility 60s, retenção 14d, long polling 20s)
-                     -> DLQ após 5 recebimentos
+Cliente
+  -> CloudFront (PriceClass_All, HTTP/2 e HTTP/3, TLS 1.2_2021)
+       WAF escopo CLOUDFRONT
+       /api/v1/lancamentos* e /api/v1/consolidados* vao ao API Gateway
+       o comportamento default devolve 404 na funcao, sem chamar a origem
+  -> API Gateway REST regional (stage v1)
+       authorizer Cognito com escopo por rota
+       WAF regional exige X-Origin-Verify (valor atual ou anterior)
+       VPC Link v2, HTTP_PROXY, timeout 10 s
+  -> ALB interno, sem IP publico
+       security group aceita o prefix list do CloudFront e o security group do VPC Link
+       rewrite tira o prefixo /v1 que a integracao privada acrescenta
+         /api/v1/lancamentos*  -> ECS lancamentos
+         /api/v1/consolidados* -> ECS consolidado
+  -> tasks Fargate ARM64 nas subnets de aplicacao
+       lancamentos -> RDS proprio + SNS
+       consolidado -> RDS proprio + SQS + Valkey
+  SNS (raw delivery) -> SQS -> DLQ depois de 5 recebimentos
 ```
 
-O lançamentos não chama o consolidado. Se o consolidado cair, a fila segura o evento por 14 dias. As tasks não têm IP público: AWS API sai por VPC endpoint e o que sobrar (pouca coisa) pelo NAT. Subnets de dados não têm rota para a internet.
+`enable_api_gateway = false` tira o gateway, o WAF regional e o VPC Link. O CloudFront volta a usar a VPC Origin no ALB, como na seção 14 do blueprint.
 
-VPC endpoints de interface: `ecr.api`, `ecr.dkr`, `logs`, `sqs`, `sns`, `secretsmanager`, `sts`, `kms` e `xray`. O X-Ray não está na lista mínima do blueprint; ele existe para o sidecar ADOT entregar trace sem abrir egress `0.0.0.0/0`. Gateway de S3 nas route tables de aplicação, para a camada de imagem do ECR.
+O TLS da internet termina no CloudFront. O trecho API Gateway → ALB é HTTP na VPC: o hostname interno do ALB não cabe num certificado ACM público. A origem do CloudFront para o gateway é HTTPS, com `AllViewerExceptHostHeader`, para o `Host` ser o do `execute-api`. O header `X-Origin-Verify` é custom header da origem e substitui o valor que o cliente mandar.
 
-## Módulos
+O provider 6.72 aceita REST API com VPC Link v2 direto no ALB (`aws_apigatewayv2_vpc_link` + `integration_target`). Não há NLB.
 
-| Módulo | O que cria |
-|---|---|
-| `modules/network` | VPC em 3 AZs, subnets públicas/app/dados, NAT, endpoints, flow logs |
-| `modules/security/kms` | CMKs com rotação: RDS de cada serviço, Valkey, mensageria, logs, access log, ECR |
-| `modules/ecr` | Repositórios imutáveis, scan on push, criptografia KMS |
-| `modules/ecs-cluster` | Cluster Fargate com Container Insights enhanced |
-| `modules/ecs-service` | Task ARM64, ADOT, SG mínimo, scaling, circuit breaker |
-| `modules/alb` | ALB, regras de caminho, WAF, access logs |
-| `modules/rds-postgres` | PostgreSQL 17, senha no Secrets Manager, SSL forçado, PITR |
-| `modules/elasticache` | Valkey, TLS obrigatório, sem senha (o contrato não tem `REDIS_PASSWORD`) |
-| `modules/messaging` | SNS + SQS + DLQ, raw delivery, policies da task role |
-| `modules/cognito` | User pool Essentials, resource server `fluxo-caixa`, Lambda de pre-token v2 |
-| `modules/observability` | Log groups, dashboard, alarmes e tópico de alerta |
-| `bootstrap` | Bucket de state. State local de propósito: é o ovo e a galinha |
+A task não recebe `DB_USERNAME` nem `DB_PASSWORD`. Recebe `DB_SECRET_ARN` e `DB_URL=jdbc:postgresql://<host>:5432/<db>`. O serviço acrescenta um único prefixo `jdbc:aws-wrapper:` quando o segredo existe. Se o host for o do RDS Proxy (`.proxy-`), o plugin `failover` fica de fora. A task role lê só esse ARN (`GetSecretValue`, `DescribeSecret`) e decifra a CMK do segredo. `DB_READER_URL` usa o mesmo esquema e só entra quando existe reader.
 
-O scaling é target tracking de CPU e de `ALBRequestCountPerTarget` nos dois serviços. O consolidado soma um target tracking de backlog por task (`mensagens visíveis / tasks em execução`, métrica do Container Insights). Não há step scaling junto: as duas políticas na mesma métrica brigam no scale-in. O `desired_count` do serviço é ignorado depois do create, para o autoscaling não ser desfeito no próximo apply.
+O sidecar ADOT entrega trace no X-Ray. A aplicação propaga `tracecontext` (W3C) e `xray`.
 
-## Dev e prod
+## Árvore
 
-| | dev | prod |
-|---|---|---|
-| NAT | 1 | 1 por AZ |
-| Interface endpoints | 1 AZ | 3 AZs |
-| Tasks iniciais | 1 por serviço | 2, mínimo 2 |
-| ECS Exec | ligado | desligado |
-| RDS | `db.t4g.micro`, single-AZ, sem delete protection | `db.t4g.small`, Multi-AZ, delete protection, snapshot final |
-| Backup RDS | 7 dias | 14 dias (PITR, RPO alvo de 5 min) |
-| Valkey | 1 nó `cache.t4g.micro` | primário + réplica, failover e Multi-AZ, `cache.t4g.small` |
-| Flow logs | REJECT | ALL |
-| Retenção de log | 7 dias | 30 dias |
+```
+infra/terraform
+├── bootstrap/                 bucket de state, CMK, lifecycle, Object Lock opcional
+├── stacks/fluxo-caixa/        composicao. Toda a logica mora aqui.
+├── envs/dev|hml|prod/         so chamam a composicao, com tfvars e backend.hcl
+└── modules/
+    ├── network
+    ├── security/kms
+    ├── ecr
+    ├── ecs-cluster
+    ├── ecs-service
+    ├── alb
+    ├── edge                   CloudFront, VPC Origin e WAF CLOUDFRONT
+    ├── api-gateway            REST regional, VPC Link v2, WAF regional, rotacao do header
+    ├── rds-postgres
+    ├── elasticache
+    ├── messaging
+    ├── cognito
+    └── observability
+```
 
-Nomes de SNS/SQS levam o prefixo do ambiente (`fluxo-caixa-dev-...`). A seção 9 do blueprint fixa os nomes para o LocalStack. Na AWS o serviço lê `LANCAMENTOS_TOPIC_ARN` e `CONSOLIDADO_QUEUE_URL`, então os dois ambientes podem existir na mesma conta. CIDRs diferentes (`10.20.0.0/16` e `10.30.0.0/16`) deixam um peering futuro possível.
+Nome de recurso: `fluxo-caixa-<env>-<recurso>`. Tags padrão do provider: `Project`, `Environment`, `Owner`, `CostCenter`, `ManagedBy`.
 
-Custo, com as quantidades deste Terraform e preço de tabela de `sa-east-1` (detalhe em [docs/08-custos.md](../../docs/08-custos.md)): prod fica em cerca de **USD 1.214/mês** e dev, ligado o mês inteiro, em cerca de **USD 385/mês**. NAT em São Paulo é cerca de USD 68 por gateway (não os USD 32 de `us-east-1`) e cada interface endpoint em uma AZ é cerca de USD 15. Prod tem 3 NAT e 9 endpoints × 3 AZs, incluindo KMS e X-Ray. Parar a task de dev à noite não é o maior corte: NAT, endpoint e RDS continuam.
+Contas separadas são opcionais. `assume_role_arn` no `terraform.tfvars` faz o provider assumir a role da conta do ambiente. O bootstrap roda uma vez em cada conta que guarda state. Sem a variável, o Terraform usa a credencial corrente.
 
-## Como provisionar
+## Dimensionamento
 
-Não rode `apply` em produção sem um plan revisado. O bootstrap tem `prevent_destroy` no bucket.
+Os números da seção 15 do blueprint são o default da composição e estão repetidos no `terraform.tfvars.example` de cada ambiente. Qualquer campo do objeto `sizing` pode ser sobrescrito. Em prod, um `check` recusa plano sem 3 AZs, NAT por AZ, interface endpoints nas 3 AZs, RDS Multi-AZ e deletion protection.
+
+| | dev | hml | prod |
+|---|---|---|---|
+| AZs | 2 | 2 | 3 |
+| NAT | 1 | 1 | 3 |
+| Interface endpoints | 0 (sai pelo NAT) | 2 AZs | 3 AZs |
+| Fargate | Spot, 0,5 vCPU / 1 GB, min 1 max 2 | on-demand | on-demand, min 2 max 10 |
+| consolidado | 0,5 vCPU / 1 GB | 1 vCPU / 2 GB, max 3 | 1 vCPU / 2 GB |
+| RDS (um por serviço) | db.t4g.micro, 20 GB, 1 dia | db.t4g.small, 20 GB, 7 dias | db.t4g.medium, 50 GB, Multi-AZ, 14 dias, deletion protection |
+| Rotação da senha | 90 dias | 30 dias | 30 dias |
+| Réplica / RDS Proxy | 0 / não | 0 / não | 0 / não, parametrizável |
+| Valkey | cache.t4g.micro, 1 nó | cache.t4g.small, 1 nó | cache.t4g.small, primário + réplica |
+| Logs | 7 dias | 14 dias | 30 dias |
+| Container Insights | desligado | ligado | enhanced |
+| Monitoring do RDS | não | não | 60 s |
+
+O gateway de S3 existe nos três ambientes. Não tem custo horário e tira a camada de imagem do NAT.
+
+## Bootstrap e state
+
+O bootstrap é local de propósito: ele cria o bucket que os outros states vão usar. O bucket tem versionamento, SSE-KMS, block public access, policy que recusa transporte sem TLS, lifecycle das versões antigas e Object Lock opcional (`enable_object_lock`, modo GOVERNANCE). Object Lock só pode ser ligado na criação do bucket.
 
 ```bash
 cd infra/terraform/bootstrap
-cp terraform.tfvars.example terraform.tfvars   # bucket único
+cp terraform.tfvars.example terraform.tfvars
 terraform init
 terraform apply
 
 terraform output -raw backend_hcl_dev  > ../envs/dev/backend.hcl
+terraform output -raw backend_hcl_hml  > ../envs/hml/backend.hcl
 terraform output -raw backend_hcl_prod > ../envs/prod/backend.hcl
 ```
 
-O `backend.hcl` gerado inclui `use_lockfile = true` e a CMK do bucket. O bloco `backend "s3"` no ambiente deixa esses campos comentados de propósito.
+O `backend "s3" {}` do ambiente é parcial. Bucket, key `fluxo-caixa/<env>/terraform.tfstate`, region, `encrypt`, `kms_key_id` e `use_lockfile` ficam no `backend.hcl`, que não entra no git.
 
 ```bash
-cd infra/terraform/envs/dev
-cp terraform.tfvars.example terraform.tfvars
-# troque certificate_arn e access_logs_bucket_name
-terraform init -backend-config=backend.hcl
-terraform plan -out=dev.tfplan
-terraform apply dev.tfplan
+make tf-init ENV=dev
+make tf-plan ENV=dev
+make tf-validate
+make tf-test
 ```
 
-Prod é o mesmo fluxo em `envs/prod`, com o `backend.hcl` da chave `fluxo-caixa/prod/terraform.tfstate`.
+`tf-plan` grava `<env>.tfplan`. Não aplique produção sem esse arquivo revisado e sem aprovação. O bucket de state tem `prevent_destroy`.
 
-Confira a versão do Postgres antes do apply. O default é `17.11`:
+Promoção entre ambientes é de imagem, não de state. O CD constrói uma vez (tag = SHA), publica no ECR de dev, assina com cosign e, em hml/prod, copia o mesmo digest. O Terraform de cada ambiente continua dono da task definition; alinhe `image_tag` antes do próximo apply para ele não voltar uma revisão antiga.
 
-```bash
-aws rds describe-db-engine-versions --region sa-east-1 --engine postgres --engine-version 17.11
+## Rotação de segredos
+
+O RDS cria o secret (`manage_master_user_password`) e já associa a função de rotação gerenciada. O provider 6.72 não tem agenda no `aws_db_instance`. `aws_secretsmanager_secret_rotation` só ajusta `automatically_after_days` e deixa `rotation_lambda_arn` de fora, para não substituir a função do RDS. `rotate_immediately = false` evita rotacionar a senha em todo apply.
+
+A CMK do secret é outra, distinta da CMK do storage. Toda CMK do projeto tem `enable_key_rotation = true`.
+
+EventBridge escuta `AWS Secrets Manager Rotation Failed` e os eventos de CloudTrail `RotationFailed` / `RotationAbandoned`, e publica no tópico de alertas. O segredo `X-Origin-Verify` entra nesse mapa quando o API Gateway está ligado.
+
+## API Gateway
+
+Módulo `modules/api-gateway`. REST API regional, stage `v1`, authorizer Cognito, VPC Link v2 no ALB interno, WAF regional e rotação do header. O POST de lançamento valida corpo e parâmetros. O POST de estorno só valida parâmetros: o corpo é opcional, e `motivo`, quando vem, é limitado no serviço. O detalhe da decisão está no [ADR 0031](../../docs/04-adr/0031-api-gateway-rest-regional.md).
+
+### Alternar `enable_api_gateway`
+
+O default é `true` nos três ambientes. Para voltar ao caminho CloudFront → VPC Origin → ALB:
+
+```hcl
+enable_api_gateway = false
 ```
 
-### Imagem no ECR
+no `terraform.tfvars` do ambiente. O módulo do gateway não é criado. O CloudFront manda `/api/v1/*` para a origem `alb`. O listener não reescreve `/v1`.
 
-O repositório é imutável. Publique uma tag que não seja `latest` e use a mesma em `image_tag`. A task é ARM64.
+### Cadastrar consumidor com API key
 
-```bash
-aws ecr get-login-password --region sa-east-1 | docker login --username AWS --password-stdin ACCOUNT.dkr.ecr.sa-east-1.amazonaws.com
-docker buildx build --platform linux/arm64 -t ACCOUNT.dkr.ecr.sa-east-1.amazonaws.com/fluxo-caixa-dev/lancamentos:TAG --push services/lancamentos-service
+Cliente final usa só JWT. API key é para integração. No tfvars:
+
+```hcl
+api_consumers = {
+  pdv = {
+    description    = "PDV da loja"
+    quota_limit    = 100000
+    quota_period   = "MONTH"
+    throttle_rate  = 10
+    throttle_burst = 20
+  }
+}
+
+api_key_required = {
+  "POST /api/v1/lancamentos" = true
+}
 ```
 
-O primeiro apply pode criar o serviço antes da imagem existir. O circuit breaker marca esse deploy como falho. Publique a imagem e force um novo deployment, ou aplique de novo com `image_tag` preenchida.
+`quota_period` é `DAY`, `WEEK` ou `MONTH`. A chave é gerada pela AWS e fica no state; o output publica só o id. Sem `api_key_required`, a chave pode ser enviada para cair no usage plan, mas a rota não exige. Com o mapa acima, o POST de lançamento exige a chave e o JWT.
 
-O workflow `.github/workflows/cd.yml` faz build, push e `render-task-definition` + deploy. Ele só troca a imagem. Se o `image_tag` do Terraform ficar para trás, o próximo apply volta a revisão antiga. Alinhe a tag antes desse apply.
+Throttle do consolidado: 20 req/s em dev, 80 em hml, 100 em prod. hml e prod ficam acima do pico de 50. O módulo recusa o contrário quando `require_consolidado_above_peak` está ligado, o que a composição faz fora de dev.
 
-### Usuário no Cognito
+### Rotação do `X-Origin-Verify`
 
-O plano do user pool é Essentials: a customização do access token (trigger v2) não existe no plano Lite. O atributo `custom:comerciante_id` é developer-only. A Lambda copia esse valor para o claim `comerciante_id`.
+O segredo `${name_prefix}/origin-verify` guarda `current` e `previous`, cifrado na CMK `origin-verify`. A Lambda `rotate_origin_verify` implementa `createSecret`, `setSecret`, `testSecret` e `finishSecret`. No `setSecret` ela move o current antigo para `previous`, grava o valor novo e atualiza o custom header da origem `api-gateway` (a distribuição é a que tem a tag `Name` do ambiente) e os dois byte matches da regra `x-origin-verify`. O valor anterior continua aceito até a rotação seguinte. `rotate_immediately = false`. A agenda é `origin_verify_rotation_days`: 90 dias em dev, 30 em hml e prod.
 
-```bash
-POOL=$(terraform output -raw cognito_user_pool_id)
-aws cognito-idp admin-create-user \
-  --user-pool-id "$POOL" \
-  --username comerciante1 \
-  --message-action SUPPRESS \
-  --user-attributes Name=custom:comerciante_id,Value=11111111-1111-1111-1111-111111111111
-aws cognito-idp admin-set-user-password \
-  --user-pool-id "$POOL" \
-  --username comerciante1 \
-  --password 'TroqueEstaSenha12' \
-  --permanent
-```
+O Terraform não fica preso à versão que criou. O bootstrap usa `ephemeral.random_password` em `secret_string_wo`, com `secret_string_wo_version = 1`. Esse número é o gatilho de reenvio: a senha efêmera muda a cada plan, mas o provider só grava de novo se a versão mudar. Não use `ignore_changes` na distribuição nem na Web ACL: uma regra nova ou um behavior novo precisa continuar aparecendo no plan. CloudFront e o WAF leem `current` e `previous` de `data.aws_secretsmanager_secret_version` com stage `AWSCURRENT`. No primeiro apply o data source espera a versão existir (`depends_on`), sem ciclo. No plan seguinte o valor vigente entra na configuração. Se a Lambda já atualizou a borda, o plan fica vazio. Se só o segredo girou, o apply empurra CloudFront e o WAF para o mesmo par, em vez de reverter para o bootstrap.
 
-O app client pede os escopos `fluxo-caixa/lancamentos:write`, `fluxo-caixa/lancamentos:read` e `fluxo-caixa/consolidado:read`. O issuer sai em `cognito_issuer_uri`.
+O que ainda fica no state: o par lido pelo data source, o custom header da origem do CloudFront e os `search_string` da regra do WAF. O header na distribuição é inevitável. O `secret_string` do resource da versão não fica no state. Não aplique no meio de uma rotação: até o `finishSecret`, `AWSCURRENT` ainda é o valor anterior, e o apply pode desfazer o header que o `setSecret` já gravou.
 
-## Contrato de ambiente na task
+## Réplica e RDS Proxy
 
-Além das variáveis da seção 10 do blueprint, a task recebe `DB_USERNAME` e `DB_PASSWORD` do secret que o RDS gerencia (`manage_master_user_password`). `DB_URL` usa `sslmode=require`: o parameter group recusa conexão sem SSL. `verify-full` fica para quando a imagem trouxer o bundle de CA da RDS.
+`sizing.read_replica_count` default 0. `sizing.enable_rds_proxy` default false.
 
-`AWS_ENDPOINT_URL` não é definida na AWS. String vazia faz o SDK tratar o endpoint como inválido. No compose local ela aponta para o LocalStack.
+A AWS não cria read replica de PostgreSQL quando a senha mestre é gerenciada pelo Secrets Manager ([limitação](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/rds-secrets-manager.html)). A variável `read_replica_count` valida a combinação, e a instância repete a regra numa precondition. O plano falha com mensagem que aponta o Multi-AZ DB Cluster, o Aurora ou a rotação por Lambda. Enquanto `read_replica_count` for 0, `DB_READER_URL` não é definida e a leitura vai ao primário. O gatilho e a recomendação (Multi-AZ DB Cluster) estão no [ADR 0030](../../docs/04-adr/0030-replica-leitura-estrategia-de-dados.md).
 
-`OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318` fala com o sidecar ADOT no mesmo network namespace da task. O coletor manda trace para o X-Ray e métrica EMF para o CloudWatch. Ele não é essencial: se o coletor cair, a task de negócio continua.
+RDS Proxy não depende de réplica. Com `enable_rds_proxy = true`, `DB_URL` aponta para o endpoint do proxy (`jdbc:postgresql://…proxy-…`) e a task alcança o security group do proxy, que por sua vez alcança o banco. O proxy também lê o secret gerenciado pelo RDS. O serviço reconhece `.proxy-` e não liga o plugin `failover` contra esse endpoint.
 
-O health check do target group é `GET /actuator/health/readiness`.
+## Contrato da task
 
-## Validação local deste repositório
+`AWS_ENDPOINT_URL` não é definida na AWS. `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318` fala com o sidecar no mesmo network namespace. O health check do target group é `GET /actuator/health/readiness`.
+
+## Validação
 
 ```bash
 terraform fmt -recursive -check infra/terraform
-cd infra/terraform/envs/dev  && terraform init -backend=false && terraform validate
-cd infra/terraform/envs/prod && terraform init -backend=false && terraform validate
+make tf-validate
+make tf-test
 ```
 
-`tflint` e `checkov` não estão instalados nesta máquina. O workflow `terraform.yml` roda os dois; o Checkov em soft-fail.
-
-## Rollback
-
-`terraform apply` de um plan anterior, ou `terraform state` apenas com o plan na mão. Produção tem delete protection no RDS, no ALB e no user pool: para destruir, desligue a proteção num apply separado e guarde o snapshot final. O bucket de state não sai com `destroy` por causa do `prevent_destroy`.
+Nada disso faz apply. `tflint` e `trivy config` rodam no workflow quando as ferramentas existem. O pre-commit está em `.pre-commit-config.yaml`.

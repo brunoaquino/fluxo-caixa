@@ -1,11 +1,15 @@
 server:
   port: ${SERVER_PORT:8081}
   shutdown: graceful
+  max-http-request-header-size: 16KB
   error:
     include-stacktrace: never
     include-message: never
     include-binding-errors: never
   forward-headers-strategy: none
+  tomcat:
+    max-http-form-post-size: 16KB
+    max-swallow-size: 16KB
 
 spring:
   application:
@@ -22,11 +26,18 @@ spring:
         await-termination-period: 20s
   datasource:
     url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    username: ${DB_USERNAME:}
+    password: ${DB_PASSWORD:}
     hikari:
       pool-name: lancamentos
       maximum-pool-size: 10
+      # 15 min, abaixo da rotação mínima do segredo (30 dias).
+      max-lifetime: 900000
+      keepalive-time: 120000
+      connection-timeout: 5000
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
   jpa:
     open-in-view: false
     hibernate:
@@ -49,10 +60,18 @@ management:
       probes:
         enabled: true
       show-details: never
+      show-components: always
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState,db
   health:
     livenessstate:
       enabled: true
     readinessstate:
+      enabled: true
+    circuitbreakers:
       enabled: true
   info:
     env:
@@ -60,6 +79,8 @@ management:
   tracing:
     sampling:
       probability: 1.0
+    propagation:
+      type: w3c
   opentelemetry:
     map-environment-variables: true
   prometheus:
@@ -70,21 +91,57 @@ management:
 logging:
   structured:
     format:
-      console: ecs
-    ecs:
-      service:
-        name: ${spring.application.name}
+      console: br.com.fluxocaixa.lancamentos.config.FormatadorDeLogJson
 
 app:
   security:
     comerciante-claim: ${APP_SECURITY_COMERCIANTE_CLAIM:comerciante_id}
     scope-prefix: ${APP_SECURITY_SCOPE_PREFIX:}
+    swagger-publico: false
   messaging:
     topic-arn: ${LANCAMENTOS_TOPIC_ARN}
   outbox:
     intervalo-ms: 500
     lote: 100
     backoff-maximo-segundos: 60
+    retencao: ${OUTBOX_RETENCAO:7d}
+    adiamento-circuito: ${OUTBOX_ADIAMENTO_CIRCUITO:30s}
+    limpeza-cron: ${OUTBOX_LIMPEZA_CRON:0 15 4 * * *}
+
+resilience4j:
+  circuitbreaker:
+    circuitBreakerAspectOrder: 1
+    instances:
+      publicacaoSns:
+        registerHealthIndicator: true
+        allowHealthIndicatorToFail: false
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 2
+        waitDurationInOpenState: 30s
+        failureRateThreshold: 50
+        slowCallDurationThreshold: 2s
+        slowCallRateThreshold: 80
+  retry:
+    retryAspectOrder: 2
+    instances:
+      publicacaoSns:
+        maxAttempts: 3
+        waitDuration: 50ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        exponentialMaxWaitDuration: 400ms
+        enableRandomizedWait: true
+        randomizedWaitFactor: 0.5
+        ignoreExceptions:
+          - io.github.resilience4j.circuitbreaker.CallNotPermittedException
+  timelimiter:
+    timeLimiterAspectOrder: 3
+    instances:
+      publicacaoSns:
+        timeoutDuration: 1s
+        cancelRunningFuture: true
 
 info:
   app:

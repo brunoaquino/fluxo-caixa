@@ -22,15 +22,10 @@ public class TratadorErrosApi {
 
     @ExceptionHandler(PeriodoConsultaInvalidoException.class)
     ResponseEntity<ProblemDetail> periodo(PeriodoConsultaInvalidoException ex, HttpServletRequest request) {
-        String detalhe = switch (ex.motivo()) {
-            case DATA_OBRIGATORIA -> ex.motivo().mensagem();
-            case INICIO_APOS_FIM -> ex.motivo().mensagem();
-            case INTERVALO_MAIOR_QUE_366 -> ex.motivo().mensagem();
-        };
         return resposta(
                 HttpStatus.BAD_REQUEST,
                 "Período inválido",
-                detalhe,
+                ex.motivo().mensagem(),
                 URI.create("https://fluxocaixa.com.br/problems/periodo-invalido"),
                 request);
     }
@@ -42,6 +37,16 @@ public class TratadorErrosApi {
                 "Requisição inválida",
                 "Verifique as datas informadas. Use o formato YYYY-MM-DD",
                 URI.create("https://fluxocaixa.com.br/problems/requisicao-invalida"),
+                request);
+    }
+
+    @ExceptionHandler(LimiteConsultasExcedidoException.class)
+    ResponseEntity<ProblemDetail> limite(LimiteConsultasExcedidoException ex, HttpServletRequest request) {
+        return resposta(
+                HttpStatus.TOO_MANY_REQUESTS,
+                "Limite de consultas excedido",
+                "Tente novamente em instantes",
+                URI.create("https://fluxocaixa.com.br/problems/limite-excedido"),
                 request);
     }
 

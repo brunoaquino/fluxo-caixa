@@ -7,7 +7,6 @@ import br.com.fluxocaixa.consolidado.application.port.out.CacheSaldoPort;
 import br.com.fluxocaixa.consolidado.application.port.out.ConsultaSaldoPort;
 import br.com.fluxocaixa.consolidado.domain.model.RelatorioDiario;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
@@ -35,10 +34,7 @@ public final class ConsultarRelatorioService implements ConsultarRelatorioUseCas
     }
 
     private RelatorioPeriodoConsulta carregar(UUID comercianteId, LocalDate inicio, LocalDate fim) {
-        BigDecimal acumuladoAntes = consulta.saldoAcumuladoAntesDe(comercianteId, inicio);
-        List<SaldoDiarioConsulta> dias = RelatorioDiario
-                .montar(inicio, fim, acumuladoAntes, consulta.buscarNoPeriodo(comercianteId, inicio, fim))
-                .stream()
+        List<SaldoDiarioConsulta> dias = consulta.buscarPeriodo(comercianteId, inicio, fim).stream()
                 .map(SaldoDiarioConsulta::de)
                 .toList();
         return new RelatorioPeriodoConsulta(inicio, fim, dias);

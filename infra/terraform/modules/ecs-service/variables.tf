@@ -140,8 +140,43 @@ variable "alb_security_group_id" {
 }
 
 variable "vpc_endpoint_security_group_id" {
-  description = "Security group dos interface endpoints."
+  description = "Security group dos interface endpoints. Nulo abre HTTPS 443 para a internet (NAT), usado em dev."
   type        = string
+  default     = null
+}
+
+variable "capacity_provider_strategy" {
+  description = "Capacity providers da task. Dev usa FARGATE_SPOT. Hml e prod usam FARGATE."
+  type = list(object({
+    capacity_provider = string
+    weight            = number
+    base              = optional(number, 0)
+  }))
+  default = [
+    {
+      capacity_provider = "FARGATE"
+      weight            = 1
+      base              = 0
+    }
+  ]
+}
+
+variable "otel_propagators" {
+  description = "Propagadores OpenTelemetry da aplicacao. tracecontext e o W3C. xray cobre o cabecalho do X-Ray."
+  type        = string
+  default     = "tracecontext,baggage,xray"
+}
+
+variable "task_secret_arns" {
+  description = "Secrets que a task role le em runtime (AWS JDBC Wrapper). Nao vao para a execution role."
+  type        = list(string)
+  default     = []
+}
+
+variable "task_secret_kms_key_arns" {
+  description = "CMKs dos secrets lidos pela task role. A policy concede apenas kms:Decrypt."
+  type        = list(string)
+  default     = []
 }
 
 variable "data_plane_access" {

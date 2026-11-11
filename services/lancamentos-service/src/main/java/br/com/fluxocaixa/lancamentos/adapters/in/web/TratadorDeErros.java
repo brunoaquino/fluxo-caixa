@@ -2,6 +2,7 @@ package br.com.fluxocaixa.lancamentos.adapters.in.web;
 
 import br.com.fluxocaixa.lancamentos.adapters.in.web.excecao.ChaveIdempotenciaInvalidaException;
 import br.com.fluxocaixa.lancamentos.adapters.in.web.excecao.ComercianteNaoIdentificadoException;
+import br.com.fluxocaixa.lancamentos.adapters.in.web.excecao.CorpoGrandeDemaisException;
 import br.com.fluxocaixa.lancamentos.adapters.in.web.excecao.PaginacaoInvalidaException;
 import br.com.fluxocaixa.lancamentos.application.excecao.IdempotenciaConflitanteException;
 import br.com.fluxocaixa.lancamentos.application.excecao.IdempotenciaDuplicadaException;
@@ -14,19 +15,25 @@ import br.com.fluxocaixa.lancamentos.domain.excecao.ValorMonetarioInvalidoExcept
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.net.URI;
 import java.util.Map;
 
 @RestControllerAdvice
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class TratadorDeErros {
 
     private static final Logger log = LoggerFactory.getLogger(TratadorDeErros.class);
@@ -52,24 +59,29 @@ public class TratadorDeErros {
         return problema;
     }
 
-    @ExceptionHandler({
-            HttpMessageNotReadableException.class,
-            MethodArgumentTypeMismatchException.class,
-            MissingServletRequestParameterException.class,
-            ChaveIdempotenciaInvalidaException.class,
-            PaginacaoInvalidaException.class
-    })
-    ProblemDetail requisicaoInvalida(Exception ex) {
-        String detalhe = switch (ex) {
-            case ChaveIdempotenciaInvalidaException chave -> chave.getMessage();
-            case PaginacaoInvalidaException paginacao -> paginacao.getMessage();
-            case MissingServletRequestParameterException parametro ->
-                    "Parâmetro obrigatório ausente: " + parametro.getParameterName();
-            case MethodArgumentTypeMismatchException tipo -> "Valor inválido para " + tipo.getName();
-            case HttpMessageNotReadableException ignorado -> "Corpo da requisição inválido";
-            default -> "Requisição inválida";
-        };
-        return problema(HttpStatus.BAD_REQUEST, "requisicao-invalida", "Requisição inválida", detalhe);
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    ProblemDetail corpoIlegivel(HttpMessageNotReadableException ex) {
+        return problema(HttpStatus.BAD_REQUEST, "requisicao-invalida", "Requisição inválida", "Corpo da requisição inválido");
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    ProblemDetail tipoInvalido(MethodArgumentTypeMismatchException ex) {
+        return problema(HttpStatus.BAD_REQUEST, "requisicao-invalida", "Requisição inválida", "Valor inválido para " + ex.getName());
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    ProblemDetail parametroAusente(MissingServletRequestParameterException ex) {
+        return problema(
+                HttpStatus.BAD_REQUEST,
+                "requisicao-invalida",
+                "Requisição inválida",
+                "Parâmetro obrigatório ausente: " + ex.getParameterName()
+        );
+    }
+
+    @ExceptionHandler({ChaveIdempotenciaInvalidaException.class, PaginacaoInvalidaException.class})
+    ProblemDetail requisicaoInvalida(RuntimeException ex) {
+        return problema(HttpStatus.BAD_REQUEST, "requisicao-invalida", "Requisição inválida", ex.getMessage());
     }
 
     @ExceptionHandler(ExcecaoDeDominio.class)
@@ -104,6 +116,26 @@ public class TratadorDeErros {
     @ExceptionHandler(ComercianteNaoIdentificadoException.class)
     ProblemDetail comerciante(ComercianteNaoIdentificadoException ex) {
         return problema(HttpStatus.FORBIDDEN, "comerciante-ausente", "Comerciante não identificado", ex.getMessage());
+    }
+
+    @ExceptionHandler(CorpoGrandeDemaisException.class)
+    ProblemDetail corpoGrande(CorpoGrandeDemaisException ex) {
+        return problema(HttpStatus.CONTENT_TOO_LARGE, "corpo-grande", "Corpo grande demais", ex.getMessage());
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    ProblemDetail naoMapeado(NoResourceFoundException ex) {
+        return problema(HttpStatus.NOT_FOUND, "nao-encontrado", "Não encontrado", "Recurso não encontrado");
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    ProblemDetail metodo(HttpRequestMethodNotSupportedException ex) {
+        return problema(HttpStatus.METHOD_NOT_ALLOWED, "metodo-nao-permitido", "Método não permitido", "Método HTTP não suportado neste recurso");
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    ProblemDetail media(HttpMediaTypeNotSupportedException ex) {
+        return problema(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "midia-nao-suportada", "Mídia não suportada", "Content-Type deve ser application/json");
     }
 
     @ExceptionHandler(Exception.class)

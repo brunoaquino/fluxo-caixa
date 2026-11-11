@@ -49,6 +49,10 @@ class TradutorEventoLancamentoTest {
                 .isInstanceOf(MensagemInvalidaException.class);
         assertThatThrownBy(() -> tradutor.traduzir(evento("CREDITO", "150.00", null).replace("BRL", "USD"), Map.of()))
                 .isInstanceOf(MensagemInvalidaException.class);
+        assertThatThrownBy(() -> tradutor.traduzir("x".repeat(TradutorEventoLancamento.TAMANHO_MAXIMO_CORPO + 1), Map.of()))
+                .isInstanceOf(MensagemInvalidaException.class);
+        assertThatThrownBy(() -> tradutor.traduzir(evento("CREDITO", "150.00", null), Map.of("eventType", "x".repeat(600))))
+                .isInstanceOf(MensagemInvalidaException.class);
     }
 
     private static String evento(String tipo, String valor, UUID estorno) {

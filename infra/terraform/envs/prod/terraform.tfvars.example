@@ -1,55 +1,66 @@
-aws_region  = "sa-east-1"
+aws_region  = "us-east-1"
 environment = "prod"
 
-certificate_arn         = "arn:aws:acm:sa-east-1:123456789012:certificate/00000000-0000-0000-0000-000000000000"
-access_logs_bucket_name = "fluxo-caixa-prod-alb-logs-123456789012"
-alert_email             = ""
+# assume_role_arn = "arn:aws:iam::333333333333:role/fluxo-caixa-prod-terraform"
 
-vpc_cidr                    = "10.30.0.0/16"
-nat_gateway_per_az          = true
-interface_endpoint_az_count = 3
-flow_log_traffic_type       = "ALL"
+alert_email = ""
+image_tag   = "bootstrap"
 
-log_retention_days          = 30
-kms_deletion_window_days    = 30
-alb_deletion_protection     = true
-cognito_deletion_protection = "ACTIVE"
-enable_execute_command      = false
+enable_api_gateway = true
+api_cache_enabled  = false
+api_consumers      = {}
 
-topic_name = "fluxo-caixa-prod-lancamentos-events"
-queue_name = "fluxo-caixa-prod-consolidado-lancamentos-queue"
-dlq_name   = "fluxo-caixa-prod-consolidado-lancamentos-dlq"
-
-image_tag = "bootstrap"
-
-rds_instance_class         = "db.t4g.small"
-rds_allocated_storage      = 50
-rds_max_allocated_storage  = 200
-rds_multi_az               = true
-rds_deletion_protection    = true
-rds_skip_final_snapshot    = false
-rds_backup_retention_days  = 14
-rds_apply_immediately      = false
-rds_connection_threshold   = 150
-rds_free_storage_threshold = 10737418240
-
-redis_node_type          = "cache.t4g.small"
-redis_num_cache_clusters = 2
-redis_automatic_failover = true
-redis_multi_az           = true
-redis_snapshot_retention = 7
-
-lancamentos_cpu                  = 512
-lancamentos_memory               = 1024
-lancamentos_desired_count        = 2
-lancamentos_min_capacity         = 2
-lancamentos_max_capacity         = 6
-lancamentos_request_count_target = 600
-
-consolidado_cpu                    = 1024
-consolidado_memory                 = 2048
-consolidado_desired_count          = 2
-consolidado_min_capacity           = 2
-consolidado_max_capacity           = 10
-consolidado_request_count_target   = 1500
-consolidado_queue_backlog_per_task = 20
+sizing = {
+  az_count                    = 3
+  nat_gateway_per_az          = true
+  interface_endpoint_az_count = 3
+  vpc_cidr                    = "10.30.0.0/16"
+  flow_log_traffic_type       = "ALL"
+  log_retention_days          = 30
+  kms_deletion_window_days    = 30
+  alb_deletion_protection     = true
+  cognito_deletion_protection = "ACTIVE"
+  enable_execute_command      = false
+  container_insights          = "enhanced"
+  capacity_provider           = "FARGATE"
+  rds_instance_class          = "db.t4g.medium"
+  rds_allocated_storage       = 50
+  rds_max_allocated_storage   = 200
+  rds_multi_az                = true
+  rds_deletion_protection     = true
+  rds_skip_final_snapshot     = false
+  rds_backup_retention_days   = 14
+  rds_apply_immediately       = false
+  rds_monitoring_interval     = 60
+  rds_rotation_days           = 30
+  read_replica_count          = 0
+  enable_rds_proxy            = false
+  rds_connection_threshold    = 300
+  rds_free_storage_threshold  = 10737418240
+  redis_node_type             = "cache.t4g.small"
+  redis_num_cache_clusters    = 2
+  redis_automatic_failover    = true
+  redis_multi_az              = true
+  redis_snapshot_retention    = 7
+  lancamentos_cpu             = 512
+  lancamentos_memory          = 1024
+  lancamentos_desired_count   = 2
+  lancamentos_min_capacity    = 2
+  lancamentos_max_capacity    = 10
+  consolidado_cpu             = 1024
+  consolidado_memory          = 2048
+  consolidado_desired_count   = 2
+  consolidado_min_capacity    = 2
+  consolidado_max_capacity    = 10
+  anonymous_ip_count_only     = false
+  waf_rate_limit              = 30000
+  api_stage_rate_limit        = 200
+  api_stage_burst_limit       = 400
+  api_consolidado_rate_limit  = 100
+  api_consolidado_burst_limit = 200
+  api_lancamentos_write_rate_limit  = 50
+  api_lancamentos_write_burst_limit = 100
+  api_lancamentos_read_rate_limit   = 50
+  api_lancamentos_read_burst_limit  = 100
+  origin_verify_rotation_days = 30
+}

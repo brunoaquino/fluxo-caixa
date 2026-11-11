@@ -8,11 +8,19 @@ locals {
   # para nao bloquear CreateGrant com uma condition estreita demais.
   keys = {
     rds-lancamentos = {
-      description = "RDS de lancamentos e o secret da senha mestre."
-      extra       = "secrets"
+      description = "Storage e Performance Insights do RDS de lancamentos."
+      extra       = "none"
     }
     rds-consolidado = {
-      description = "RDS de consolidado e o secret da senha mestre."
+      description = "Storage e Performance Insights do RDS de consolidado."
+      extra       = "none"
+    }
+    rds-secret-lancamentos = {
+      description = "Secret da senha mestre do RDS de lancamentos."
+      extra       = "secrets"
+    }
+    rds-secret-consolidado = {
+      description = "Secret da senha mestre do RDS de consolidado."
       extra       = "secrets"
     }
     elasticache = {
@@ -34,6 +42,10 @@ locals {
     ecr = {
       description = "Imagens no ECR."
       extra       = "none"
+    }
+    origin-verify = {
+      description = "Segredo do header X-Origin-Verify entre CloudFront e API Gateway."
+      extra       = "secrets"
     }
   }
 }
@@ -67,8 +79,11 @@ data "aws_iam_policy_document" "key" {
       resources = ["*"]
 
       principals {
-        type        = "Service"
-        identifiers = ["logs.${var.region}.amazonaws.com"]
+        type = "Service"
+        identifiers = [
+          "logs.${var.region}.amazonaws.com",
+          "delivery.logs.amazonaws.com",
+        ]
       }
 
       condition {
@@ -166,6 +181,7 @@ data "aws_iam_policy_document" "key" {
           "sns.amazonaws.com",
           "sqs.amazonaws.com",
           "cloudwatch.amazonaws.com",
+          "events.amazonaws.com",
         ]
       }
 

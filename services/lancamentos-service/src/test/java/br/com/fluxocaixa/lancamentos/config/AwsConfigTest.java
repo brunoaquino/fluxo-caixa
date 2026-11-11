@@ -20,7 +20,7 @@ class AwsConfigTest {
 
     @Test
     void endpointPreenchidoSobrescreveEUsaCredencialEstatica() {
-        try (SnsClient client = config.snsClient("sa-east-1", "http://localhost:4566", "test", "test")) {
+        try (SnsClient client = config.snsClient("us-east-1", "http://localhost:4566", "test", "test")) {
             assertThat(client.serviceClientConfiguration().endpointOverride())
                     .contains(URI.create("http://localhost:4566"));
             assertThat(client.serviceClientConfiguration().credentialsProvider().getClass().getName())
@@ -29,7 +29,7 @@ class AwsConfigTest {
     }
 
     private void assertSemOverride(String endpoint) {
-        try (SnsClient client = config.snsClient("sa-east-1", endpoint, "test", "test")) {
+        try (SnsClient client = config.snsClient("us-east-1", endpoint, "test", "test")) {
             assertThat(client.serviceClientConfiguration().endpointOverride()).isEmpty();
             assertThat(client.serviceClientConfiguration().credentialsProvider().getClass().getName())
                     .doesNotContain("StaticCredentialsProvider");

@@ -18,3 +18,5 @@ backend.hcl
 !.env.example
 *.log
 infra/terraform/**/.build/
+infra/terraform/modules/**/.terraform.lock.hcl
+infra/terraform/stacks/**/.terraform.lock.hcl

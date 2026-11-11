@@ -1,6 +1,21 @@
 output "address" {
-  description = "Hostname do RDS."
+  description = "Hostname da instancia primaria."
   value       = aws_db_instance.this.address
+}
+
+output "endpoint" {
+  description = "Host que a aplicacao usa em DB_URL. O proxy, quando enable_rds_proxy; senao a instancia."
+  value       = try(aws_db_proxy.this[0].endpoint, aws_db_instance.this.address)
+}
+
+output "reader_endpoint" {
+  description = "Host de DB_READER_URL. Nulo sem replica."
+  value       = try(aws_db_proxy_endpoint.reader[0].endpoint, try(aws_db_instance.replica["0"].address, null))
+}
+
+output "client_security_group_id" {
+  description = "Security group que a task deve alcancar. O do proxy, se existir; senao o do banco."
+  value       = try(aws_security_group.proxy[0].id, aws_security_group.this.id)
 }
 
 output "port" {

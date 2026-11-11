@@ -1,6 +1,16 @@
 # Na AWS o SDK usa o endpoint regional. AWS_ENDPOINT_URL fica vazio.
+# DB_URL chega como jdbc:postgresql://. DB_SECRET_ARN liga o wrapper sem duplicar o prefixo.
+# No endpoint do RDS Proxy o plugin failover fica desligado.
+# Swagger desligado, igual ao lancamentos: a UI não sobe neste perfil.
 app:
   aws:
     endpoint-url: ${AWS_ENDPOINT_URL:}
   security:
     scope-prefix: ${APP_SECURITY_SCOPE_PREFIX:fluxo-caixa/}
+    swagger-publico: false
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

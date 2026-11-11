@@ -21,7 +21,7 @@ O outbox precisa de um transporte entre o serviço de lançamentos e o de consol
 ### 1. Amazon MSK (Kafka)
 
 - Positivo: log retido, replay por offset, vários consumidores independentes, ecossistema de stream.
-- Negativo: o menor cluster Multi-AZ são três brokers mais armazenamento, na casa de **centenas de USD por mês** em `sa-east-1`, duas ordens de grandeza acima da conta de SNS/SQS neste volume. Operação de versão, disco e partição. Local fica mais pesado que um LocalStack. Kafka se paga quando houver replay longo, processamento de stream ou throughput sustentado na casa de milhares de eventos/s — cenário do [roadmap](../10-evolucoes-futuras.md), não o de agora.
+- Negativo: o menor cluster Multi-AZ são três brokers mais armazenamento, na casa de **centenas de USD por mês** mesmo em `us-east-1` (e mais caro em `sa-east-1`), duas ordens de grandeza acima da conta de SNS/SQS neste volume. Operação de versão, disco e partição. Local fica mais pesado que um LocalStack. Kafka se paga quando houver replay longo, processamento de stream ou throughput sustentado na casa de milhares de eventos/s — cenário do [roadmap](../10-evolucoes-futuras.md), não o de agora.
 
 ### 2. Amazon MQ (ActiveMQ ou RabbitMQ)
 

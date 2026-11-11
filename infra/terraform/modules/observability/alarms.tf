@@ -1,5 +1,9 @@
 locals {
   alarm_actions = [aws_sns_topic.alerts.arn]
+  api_dimensions = {
+    ApiName = var.api_gateway == null ? "unused" : var.api_gateway.api_name
+    Stage   = var.api_gateway == null ? "unused" : var.api_gateway.stage
+  }
 }
 
 resource "aws_cloudwatch_metric_alarm" "elb_5xx" {
@@ -237,4 +241,84 @@ resource "aws_cloudwatch_metric_alarm" "rds_connections" {
   dimensions = {
     DBInstanceIdentifier = each.value.identifier
   }
+}
+
+resource "aws_cloudwatch_metric_alarm" "api_5xx" {
+  count = var.api_gateway == null ? 0 : 1
+
+  alarm_name          = "${var.name_prefix}-api-5xx"
+  alarm_description   = "5XX do API Gateway, incluindo falha de integracao."
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 3
+  datapoints_to_alarm = 2
+  threshold           = 5
+  treat_missing_data  = "notBreaching"
+  metric_name         = "5XXError"
+  namespace           = "AWS/ApiGateway"
+  period              = 60
+  statistic           = "Sum"
+  alarm_actions       = local.alarm_actions
+  ok_actions          = local.alarm_actions
+
+  dimensions = local.api_dimensions
+}
+
+resource "aws_cloudwatch_metric_alarm" "api_4xx" {
+  count = var.api_gateway == null ? 0 : 1
+
+  alarm_name          = "${var.name_prefix}-api-4xx"
+  alarm_description   = "4XX elevado no API Gateway. Token invalido conta aqui e nao chega na task."
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 3
+  datapoints_to_alarm = 2
+  threshold           = 100
+  treat_missing_data  = "notBreaching"
+  metric_name         = "4XXError"
+  namespace           = "AWS/ApiGateway"
+  period              = 60
+  statistic           = "Sum"
+  alarm_actions       = local.alarm_actions
+  ok_actions          = local.alarm_actions
+
+  dimensions = local.api_dimensions
+}
+
+resource "aws_cloudwatch_metric_alarm" "api_latency_p99" {
+  count = var.api_gateway == null ? 0 : 1
+
+  alarm_name          = "${var.name_prefix}-api-latencia-p99"
+  alarm_description   = "Latencia p99 do API Gateway acima de 1 s. A metrica e em milissegundos."
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 5
+  datapoints_to_alarm = 3
+  threshold           = 1000
+  treat_missing_data  = "notBreaching"
+  metric_name         = "Latency"
+  namespace           = "AWS/ApiGateway"
+  period              = 60
+  extended_statistic  = "p99"
+  alarm_actions       = local.alarm_actions
+  ok_actions          = local.alarm_actions
+
+  dimensions = local.api_dimensions
+}
+
+resource "aws_cloudwatch_metric_alarm" "api_integration_latency_p99" {
+  count = var.api_gateway == null ? 0 : 1
+
+  alarm_name          = "${var.name_prefix}-api-integracao-p99"
+  alarm_description   = "IntegrationLatency p99 acima de 800 ms. O timeout de integracao e 10 s."
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 5
+  datapoints_to_alarm = 3
+  threshold           = 800
+  treat_missing_data  = "notBreaching"
+  metric_name         = "IntegrationLatency"
+  namespace           = "AWS/ApiGateway"
+  period              = 60
+  extended_statistic  = "p99"
+  alarm_actions       = local.alarm_actions
+  ok_actions          = local.alarm_actions
+
+  dimensions = local.api_dimensions
 }

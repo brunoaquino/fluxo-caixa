@@ -4,7 +4,7 @@ Este documento operacionaliza os RNF do [contexto](01-contexto-e-requisitos.md) 
 
 ## 1. SLI, SLO e error budget
 
-Janela: 30 dias corridos (43.200 minutos). O SLI é medido na borda (ALB) em produção e no próprio processo no local.
+Janela: 30 dias corridos (43.200 minutos). O SLI de disponibilidade e de latência do processo continua medido no serviço, dentro de `us-east-1`, e no próprio processo no local. O API Gateway acrescenta cerca de 10–30 ms nesse caminho ([ADR 0031](04-adr/0031-api-gateway-rest-regional.md)). Esse acréscimo não entra no SLO do processo: entra no tempo que o comerciante percebe, junto com o RTT entre o edge de São Paulo e a Virgínia (cerca de 110–130 ms numa conexão já quente, [ADR 0021](04-adr/0021-regiao-us-east-1.md)). Bloqueio do WAF e 401 do authorizer são séries à parte, não 5xx do serviço. Se um contrato futuro medir o SLO na borda, o orçamento de latência do processo encolhe esses 10–30 ms; hoje os dois relógios ficam separados de propósito.
 
 | Serviço | SLI | SLO | Error budget |
 |---|---|---|---|
@@ -30,9 +30,9 @@ Escala horizontal primeiro.
 
 | Alavanca | Como está hoje | Limite em que muda o desenho |
 |---|---|---|
-| Tasks ECS | Prod: mínimo 2. Lançamentos até 6 (0,5 vCPU / 1 GiB). Consolidado até 10 (1 vCPU / 2 GiB). CPU 60%, request count do ALB e, no consolidado, backlog da fila com alvo de 20 mensagens por task | Acima do teto, rever pool JDBC (10 no lançamentos, 20 no consolidado, por task) contra `max_connections` do `db.t4g.small` |
+| Tasks ECS | Prod: mínimo 2, máximo 10 nos dois serviços. Lançamentos 0,5 vCPU / 1 GiB. Consolidado 1 vCPU / 2 GiB. CPU, request do ALB e, no consolidado, backlog da fila | Acima do teto, rever pool JDBC (10 no lançamentos, 20 no consolidado, por task) contra `max_connections` do `db.t4g.medium` |
 | Cache | Versão por comerciante, TTL 30 s, Redis local e Valkey na AWS | Hit ratio &lt; 80% no pico: ou o padrão de acesso não é o da premissa P6, ou a versão está sendo incrementada à toa |
-| Banco | `db.t4g.small` Multi-AZ, gp3 50 GB, 3.000 IOPS inclusos | CPU credit sustentado ou memória: subir para medium. Disco: crescer gp3. Leitura do `SUM`: réplica de leitura, não instância maior |
+| Banco | `db.t4g.medium` Multi-AZ em prod, gp3 50 GB, 3.000 IOPS inclusos. Réplica desligada até o gatilho | Leitura do `SUM`: réplica, não instância maior. Ver [12](12-desempenho-e-dados.md) |
 | Fila | Standard, competing consumers = número de tasks | Se um comerciante sozinho gerar mais do que uma task drena, particionar por `comercianteId` (fila FIFO com message group, ou várias filas). Não é o caso a 20 evt/s |
 | Particionamento de dado | Não há. Um banco cabe | Shard por `comerciante_id` só se um único Postgres não guardar o histórico. Com uma linha por lançamento e dezenas de milhões de linhas, ainda é cedo |
 
@@ -49,16 +49,16 @@ Auto scaling reage em minutos. Por isso o desired count do fechamento conhecido 
 | ElastiCache com réplica | Consolidado | Promoção do nó. Se o cluster inteiro some, o GET cai no Postgres |
 | Fila com 14 dias | SQS | Consolidado pode ficar fora uma semana sem perder evento |
 | Outbox | Lançamentos | SNS fora não desfaz o 201 |
-| Backoff do relay | `proxima_tentativa_em`, exponencial até 60 s, sem jitter e sem Resilience4j | O POST não chama o SNS. O relay não republica em loop |
+| Backoff do relay | `proxima_tentativa_em` até 60 s, mais Resilience4j no cliente SNS: retry com jitter, time limiter e circuit breaker ([ADR 0023](04-adr/0023-resilience4j-e-versoes.md)) | O POST não chama o SNS. Circuito aberto adia o lote; o evento fica na outbox |
 | Timeout curto | Redis e chamadas AWS do relay | Thread virtual não fica presa; o POST não chama esses clientes |
 | DLQ após 5 tentativas | SQS | Poison message sai da frente |
 | Visibility 60 s | SQS | Processamento normal é de dezenas de milissegundos; 60 s cobre um GC ruim sem devolver a mensagem cedo demais |
 | Bulkhead de pool | Hikari máximo 10 | Stampede não abre 200 conexões |
-| Degradação | Redis fora | Leitura segue, mais lenta. Readiness continua verde ([ADR 0020](04-adr/0020-estrategia-de-deploy.md)) |
+| Degradação | Redis fora ou circuito aberto | Leitura segue no Postgres, mais lenta. Readiness continua verde ([ADR 0020](04-adr/0020-estrategia-de-deploy.md), [ADR 0023](04-adr/0023-resilience4j-e-versoes.md)) |
 | Deploy circuit breaker | ECS | Task nova doente não substitui as saudáveis até o fim |
 | Backoff do cliente do caixa | Fora do nosso processo | 429/503 com `Retry-After` quando viermos a introduzir limite de aplicação; hoje o limite grosso é o WAF |
 
-O que não está coberto: perda da região `sa-east-1`. O RTO de 1 h não é multi-região. Dizer o contrário no slide de venda seria falso; a evolução está no [documento 10](10-evolucoes-futuras.md).
+O que não está coberto: perda da região `us-east-1`. O RTO de 1 h não é multi-região. Dizer o contrário no slide de venda seria falso; a evolução está no [documento 10](10-evolucoes-futuras.md).
 
 Game day mínimo, uma vez por trimestre, no dev AWS ou com falha injetada no local:
 
@@ -116,8 +116,8 @@ O relatório do k6 fica como evidência do RNF-05. A corrida de 1 minuto no Dock
 | RNF-11 segurança | OIDC, escopos, WAF, KMS | [06](06-seguranca.md); testes 401/403/404 cruzado |
 | RNF-12 observabilidade | OTel, alarmes de fila e DLQ | Trace do POST até o consumidor no Grafana local; alarme com ação no Terraform |
 | RNF-13 manutenibilidade | Hexagonal, ArchUnit, `/api/v1`, `eventVersion` | Build com ArchUnit; contrato do evento em teste |
-| RNF-14 custo | Fargate ARM, RDS small, fila gerenciada | [08](08-custos.md) fechado contra `terraform.tfvars.example`: cerca de USD 1.214/mês em prod |
-| RNF-15 LGPD | `sa-east-1`, evento sem descrição | Revisão do payload v1; região no Terraform |
-| RNF-16 escala | Auto scaling. Teto 6 no lançamentos e 10 no consolidado. Backlog da fila por target tracking | Revisão do módulo ECS. Teste de política em dev (subir CPU artificial) ainda não executado |
+| RNF-14 custo | Fargate ARM, RDS medium em prod, fila gerenciada, região `us-east-1`, REST API | [08](08-custos.md): cerca de USD 777/mês em prod, USD 143 em dev e USD 356 em hml, 24×7 |
+| RNF-15 LGPD | Transferência internacional com salvaguarda, evento sem descrição | [ADR 0021](04-adr/0021-regiao-us-east-1.md); revisão do payload v1 |
+| RNF-16 escala | Auto scaling. Teto 10 nos dois serviços. Backlog da fila por target tracking | Revisão do módulo ECS. Teste de política em dev (subir CPU artificial) ainda não executado |
 
 Itens cuja evidência depende de infra que outro fluxo ainda está criando ficam com o teste nomeado. Quando o teste existir, a matriz não muda de mecanismo — muda de “especificado” para “executado”. O estado desta entrega é especificado e amarrado ao comando; a execução contínua é do CI descrito em [testes](11-testes.md).

@@ -1,7 +1,9 @@
 # Java 25 e Spring Boot 4
 
-- **Status:** Aceito
+- **Status:** Substituído (Superseded) pelo [ADR 0023](0023-resilience4j-e-versoes.md)
 - **Data:** 2026-11-10
+
+O texto abaixo escolheu Java 25 e a linha Boot 4 sem pinar o patch e sem Resilience4j. A decisão vigente é Boot 4.0.9 e Resilience4j 2.4.0. A frase deste arquivo que diz que a versão de patch não está pinada não vale mais.
 
 ## Contexto e problema
 

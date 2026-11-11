@@ -24,21 +24,25 @@ public class ConsultaConsolidadoController {
     private final ConsultarSaldoDiarioUseCase consultarSaldoDiario;
     private final ConsultarRelatorioUseCase consultarRelatorio;
     private final ComercianteAutenticado comerciante;
+    private final LimitadorConsultas limitador;
 
     public ConsultaConsolidadoController(
             ConsultarSaldoDiarioUseCase consultarSaldoDiario,
             ConsultarRelatorioUseCase consultarRelatorio,
-            ComercianteAutenticado comerciante) {
+            ComercianteAutenticado comerciante,
+            LimitadorConsultas limitador) {
         this.consultarSaldoDiario = consultarSaldoDiario;
         this.consultarRelatorio = consultarRelatorio;
         this.comerciante = comerciante;
+        this.limitador = limitador;
     }
 
     @GetMapping("/diario/{data}")
     @Operation(summary = "Saldo consolidado do dia, incluindo o saldo acumulado")
     public SaldoDiarioResponse dia(
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data) {
-        return MapeadorResposta.paraResposta(consultarSaldoDiario.consultar(comerciante.atual(), data));
+        return limitador.executar(() ->
+                MapeadorResposta.paraResposta(consultarSaldoDiario.consultar(comerciante.atual(), data)));
     }
 
     @GetMapping("/diario")
@@ -46,6 +50,7 @@ public class ConsultaConsolidadoController {
     public RelatorioPeriodoResponse periodo(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fim) {
-        return MapeadorResposta.paraResposta(consultarRelatorio.consultar(comerciante.atual(), inicio, fim));
+        return limitador.executar(() ->
+                MapeadorResposta.paraResposta(consultarRelatorio.consultar(comerciante.atual(), inicio, fim)));
     }
 }

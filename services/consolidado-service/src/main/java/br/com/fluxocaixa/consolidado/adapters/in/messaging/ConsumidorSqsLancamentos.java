@@ -1,9 +1,7 @@
 package br.com.fluxocaixa.consolidado.adapters.in.messaging;
 
 import br.com.fluxocaixa.consolidado.config.PropriedadesAplicacao;
-import io.micrometer.observation.Observation;
-import io.micrometer.observation.ObservationRegistry;
-import io.micrometer.observation.transport.ReceiverContext;
+import br.com.fluxocaixa.consolidado.observabilidade.RastreioMensagem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.SmartLifecycle;
@@ -11,6 +9,7 @@ import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
+import software.amazon.awssdk.services.sqs.model.MessageSystemAttributeName;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,7 +34,7 @@ public class ConsumidorSqsLancamentos implements SmartLifecycle {
     private final int esperaSegundos;
     private final int maximoMensagens;
     private final ProcessadorEventoLancamento processador;
-    private final ObservationRegistry observationRegistry;
+    private final RastreioMensagem rastreio;
     private final AtomicBoolean executando = new AtomicBoolean(false);
     private volatile Thread poller;
     private volatile ExecutorService trabalhadores;
@@ -44,7 +43,7 @@ public class ConsumidorSqsLancamentos implements SmartLifecycle {
             SqsClient sqs,
             PropriedadesAplicacao propriedades,
             ProcessadorEventoLancamento processador,
-            ObservationRegistry observationRegistry) {
+            RastreioMensagem rastreio) {
         this.sqs = sqs;
         this.fila = propriedades.messaging().queueUrl();
         if (fila == null || fila.isBlank()) {
@@ -53,7 +52,7 @@ public class ConsumidorSqsLancamentos implements SmartLifecycle {
         this.esperaSegundos = Math.clamp(propriedades.messaging().waitTimeSeconds(), 0, 20);
         this.maximoMensagens = Math.clamp(propriedades.messaging().maxMessages(), 1, 10);
         this.processador = processador;
-        this.observationRegistry = observationRegistry;
+        this.rastreio = rastreio;
     }
 
     @Override
@@ -63,7 +62,7 @@ public class ConsumidorSqsLancamentos implements SmartLifecycle {
         }
         trabalhadores = Executors.newVirtualThreadPerTaskExecutor();
         poller = Thread.ofVirtual().name("sqs-consolidador").start(this::loop);
-        log.info("Consumidor SQS iniciado. fila={}", fila);
+        log.info("Consumidor SQS iniciado");
     }
 
     @Override
@@ -126,12 +125,13 @@ public class ConsumidorSqsLancamentos implements SmartLifecycle {
                         .queueUrl(fila)
                         .maxNumberOfMessages(maximoMensagens)
                         .waitTimeSeconds(esperaSegundos)
-                        .messageAttributeNames("All")).messages();
+                        .messageAttributeNames("All")
+                        .messageSystemAttributeNames(MessageSystemAttributeName.ALL)).messages();
             } catch (SdkException ex) {
                 if (!executando.get()) {
                     break;
                 }
-                log.warn("Falha ao receber mensagens da fila {}", fila, ex);
+                log.warn("Falha ao receber mensagens da fila", ex);
                 pausar();
                 continue;
             }
@@ -156,45 +156,20 @@ public class ConsumidorSqsLancamentos implements SmartLifecycle {
     }
 
     private void processar(Message mensagem) {
-        ReceiverContext<Message> contexto = new ReceiverContext<>(this::extrairAtributo);
-        contexto.setCarrier(mensagem);
-        Observation observation = Observation.start(
-                "consolidado.processar.evento",
-                () -> contexto,
-                observationRegistry);
-        try (Observation.Scope ignored = observation.openScope()) {
-            DesfechoConsumo desfecho = processador.consumir(new MensagemRecebida(
-                    mensagem.body(),
-                    atributos(mensagem),
-                    mensagem.receiptHandle()));
-            switch (desfecho) {
-                case PROCESSADO, DUPLICADO -> {
+        Map<String, String> atributos = atributos(mensagem);
+        try {
+            rastreio.executar(atributos, () -> {
+                DesfechoConsumo desfecho = processador.consumir(new MensagemRecebida(
+                        mensagem.body(),
+                        atributos,
+                        mensagem.receiptHandle()));
+                if (desfecho == DesfechoConsumo.POISON || desfecho == DesfechoConsumo.FALHA) {
+                    throw new ConsumoSemExclusaoException(desfecho);
                 }
-                case POISON, FALHA -> observation.error(
-                        new IllegalStateException("Falha ao consumir evento: " + desfecho));
-            }
-        } catch (RuntimeException ex) {
-            observation.error(ex);
-            throw ex;
-        } finally {
-            observation.stop();
+            });
+        } catch (ConsumoSemExclusaoException ex) {
+            log.debug("Mensagem permanece na fila para redrive: {}", ex.desfecho());
         }
-    }
-
-    private String extrairAtributo(Message mensagem, String chave) {
-        if (mensagem == null || mensagem.messageAttributes() == null) {
-            return null;
-        }
-        MessageAttributeValue direto = mensagem.messageAttributes().get(chave);
-        if (direto != null && direto.stringValue() != null) {
-            return direto.stringValue();
-        }
-        for (Map.Entry<String, MessageAttributeValue> entrada : mensagem.messageAttributes().entrySet()) {
-            if (entrada.getKey().equalsIgnoreCase(chave) && entrada.getValue() != null) {
-                return entrada.getValue().stringValue();
-            }
-        }
-        return null;
     }
 
     private static Map<String, String> atributos(Message mensagem) {
@@ -215,6 +190,20 @@ public class ConsumidorSqsLancamentos implements SmartLifecycle {
             Thread.sleep(1000);
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
+        }
+    }
+
+    private static final class ConsumoSemExclusaoException extends RuntimeException {
+
+        private final DesfechoConsumo desfecho;
+
+        private ConsumoSemExclusaoException(DesfechoConsumo desfecho) {
+            super(desfecho.name());
+            this.desfecho = desfecho;
+        }
+
+        private DesfechoConsumo desfecho() {
+            return desfecho;
         }
     }
 }

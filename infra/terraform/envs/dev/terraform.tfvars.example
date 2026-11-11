@@ -1,59 +1,72 @@
-aws_region   = "sa-east-1"
-environment  = "dev"
+aws_region  = "us-east-1"
+environment = "dev"
 
-# Substitua pelo certificado ACM real da conta, na regiao sa-east-1.
-certificate_arn         = "arn:aws:acm:sa-east-1:123456789012:certificate/00000000-0000-0000-0000-000000000000"
-access_logs_bucket_name = "fluxo-caixa-dev-alb-logs-123456789012"
-alert_email             = ""
+# Conta propria deste ambiente. Nulo usa a credencial corrente.
+# assume_role_arn = "arn:aws:iam::111111111111:role/fluxo-caixa-dev-terraform"
 
-vpc_cidr                    = "10.20.0.0/16"
-nat_gateway_per_az          = false
-interface_endpoint_az_count = 1
-flow_log_traffic_type       = "REJECT"
+# Sem dominio, o CloudFront usa o certificado padrao *.cloudfront.net.
+# acm_certificate_arn = "arn:aws:acm:us-east-1:111111111111:certificate/00000000-0000-0000-0000-000000000000"
+# domain_names        = ["api.dev.exemplo.com"]
 
-log_retention_days         = 7
-kms_deletion_window_days   = 7
-alb_deletion_protection    = false
-cognito_deletion_protection = "INACTIVE"
-enable_execute_command     = true
+alert_email = ""
+image_tag   = "bootstrap"
 
-# Nomes com prefixo de ambiente. O contrato local usa os nomes fixos da secao 9;
-# na AWS o servico recebe ARN e URL por variavel, entao dev e prod podem
-# conviver na mesma conta e regiao.
-topic_name = "fluxo-caixa-dev-lancamentos-events"
-queue_name = "fluxo-caixa-dev-consolidado-lancamentos-queue"
-dlq_name   = "fluxo-caixa-dev-consolidado-lancamentos-dlq"
+enable_api_gateway = true
+api_cache_enabled  = false
+api_consumers      = {}
 
-image_tag = "bootstrap"
-
-rds_instance_class        = "db.t4g.micro"
-rds_allocated_storage     = 20
-rds_max_allocated_storage = 50
-rds_multi_az              = false
-rds_deletion_protection   = false
-rds_skip_final_snapshot   = true
-rds_backup_retention_days = 7
-rds_apply_immediately     = true
-rds_connection_threshold  = 80
-rds_free_storage_threshold = 5368709120
-
-redis_node_type            = "cache.t4g.micro"
-redis_num_cache_clusters   = 1
-redis_automatic_failover   = false
-redis_multi_az             = false
-redis_snapshot_retention   = 1
-
-lancamentos_cpu                  = 256
-lancamentos_memory               = 512
-lancamentos_desired_count        = 1
-lancamentos_min_capacity         = 1
-lancamentos_max_capacity         = 2
-lancamentos_request_count_target = 600
-
-consolidado_cpu                     = 512
-consolidado_memory                  = 1024
-consolidado_desired_count           = 1
-consolidado_min_capacity            = 1
-consolidado_max_capacity            = 4
-consolidado_request_count_target    = 1500
-consolidado_queue_backlog_per_task  = 20
+# Defaults da secao 15. Repetidos aqui para o plan mostrar o contrato do ambiente.
+sizing = {
+  az_count                    = 2
+  nat_gateway_per_az          = false
+  interface_endpoint_az_count = 0
+  vpc_cidr                    = "10.20.0.0/16"
+  flow_log_traffic_type       = "REJECT"
+  log_retention_days          = 7
+  kms_deletion_window_days    = 7
+  alb_deletion_protection     = false
+  cognito_deletion_protection = "INACTIVE"
+  enable_execute_command      = true
+  container_insights          = "disabled"
+  capacity_provider           = "FARGATE_SPOT"
+  rds_instance_class          = "db.t4g.micro"
+  rds_allocated_storage       = 20
+  rds_max_allocated_storage   = 50
+  rds_multi_az                = false
+  rds_deletion_protection     = false
+  rds_skip_final_snapshot     = true
+  rds_backup_retention_days   = 1
+  rds_apply_immediately       = true
+  rds_monitoring_interval     = 0
+  rds_rotation_days           = 90
+  read_replica_count          = 0
+  enable_rds_proxy            = false
+  rds_connection_threshold    = 80
+  rds_free_storage_threshold  = 5368709120
+  redis_node_type             = "cache.t4g.micro"
+  redis_num_cache_clusters    = 1
+  redis_automatic_failover    = false
+  redis_multi_az              = false
+  redis_snapshot_retention    = 1
+  lancamentos_cpu             = 512
+  lancamentos_memory          = 1024
+  lancamentos_desired_count   = 1
+  lancamentos_min_capacity    = 1
+  lancamentos_max_capacity    = 2
+  consolidado_cpu             = 512
+  consolidado_memory          = 1024
+  consolidado_desired_count   = 1
+  consolidado_min_capacity    = 1
+  consolidado_max_capacity    = 2
+  anonymous_ip_count_only     = true
+  waf_rate_limit              = 30000
+  api_stage_rate_limit        = 30
+  api_stage_burst_limit       = 60
+  api_consolidado_rate_limit  = 20
+  api_consolidado_burst_limit = 40
+  api_lancamentos_write_rate_limit  = 10
+  api_lancamentos_write_burst_limit = 20
+  api_lancamentos_read_rate_limit   = 10
+  api_lancamentos_read_burst_limit  = 20
+  origin_verify_rotation_days = 90
+}

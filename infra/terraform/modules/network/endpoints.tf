@@ -16,6 +16,8 @@ locals {
 }
 
 resource "aws_security_group" "endpoints" {
+  count = var.interface_endpoint_az_count == 0 ? 0 : 1
+
   name        = "${var.name_prefix}-vpce"
   description = "HTTPS dos interface endpoints, apenas a partir das subnets de aplicacao."
   vpc_id      = aws_vpc.this.id
@@ -26,9 +28,9 @@ resource "aws_security_group" "endpoints" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "endpoints_https" {
-  for_each = aws_subnet.app
+  for_each = var.interface_endpoint_az_count == 0 ? {} : aws_subnet.app
 
-  security_group_id = aws_security_group.endpoints.id
+  security_group_id = aws_security_group.endpoints[0].id
   description       = "HTTPS das tasks na subnet ${each.key}."
   cidr_ipv4         = each.value.cidr_block
   from_port         = 443
@@ -37,13 +39,13 @@ resource "aws_vpc_security_group_ingress_rule" "endpoints_https" {
 }
 
 resource "aws_vpc_endpoint" "interface" {
-  for_each = local.interface_endpoints
+  for_each = var.interface_endpoint_az_count == 0 ? {} : local.interface_endpoints
 
   vpc_id              = aws_vpc.this.id
   service_name        = "com.amazonaws.${var.region}.${each.value}"
   vpc_endpoint_type   = "Interface"
   subnet_ids          = local.endpoint_subnet_ids
-  security_group_ids  = [aws_security_group.endpoints.id]
+  security_group_ids  = [aws_security_group.endpoints[0].id]
   private_dns_enabled = true
 
   tags = {

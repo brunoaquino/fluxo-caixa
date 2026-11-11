@@ -32,8 +32,11 @@ data "aws_iam_policy_document" "alerts" {
     resources = [aws_sns_topic.alerts.arn]
 
     principals {
-      type        = "Service"
-      identifiers = ["cloudwatch.amazonaws.com"]
+      type = "Service"
+      identifiers = [
+        "cloudwatch.amazonaws.com",
+        "events.amazonaws.com",
+      ]
     }
 
     condition {

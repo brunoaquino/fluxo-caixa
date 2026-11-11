@@ -13,19 +13,25 @@ C4Container
 title Fluxo de Caixa
 Person(comerciante, "Comerciante", "Registra lancamentos e consulta o saldo")
 System_Boundary(fc, "Fluxo de Caixa") {
-  Container(lanc, "lancamentos-service", "Java 25 / Spring Boot 4", "Porta 8081. Fonte da verdade")
+  Container(cf, "CloudFront", "WAF CLOUDFRONT", "Entrada publica. Cache desligado em /api")
+  Container(apigw, "API Gateway", "REST regional", "Authorizer, cota e validacao")
+  Container(alb, "ALB interno", "HTTP", "Sem IP publico")
+  Container(lanc, "lancamentos-service", "Java 25 / Spring Boot 4.0", "Porta 8081. Fonte da verdade")
   ContainerDb(dbl, "Postgres lancamentos", "PostgreSQL 17", "Lancamento idempotencia e outbox")
   ContainerQueue(sns, "SNS", "fluxo-caixa-lancamentos-events", "Evento LancamentoRegistrado v1")
   ContainerQueue(sqs, "SQS", "consolidado-lancamentos-queue", "Retencao 14 dias e DLQ")
-  Container(cons, "consolidado-service", "Java 25 / Spring Boot 4", "Porta 8082. Saldo diario")
+  Container(cons, "consolidado-service", "Java 25 / Spring Boot 4.0", "Porta 8082. Saldo diario")
   ContainerDb(dbc, "Postgres consolidado", "PostgreSQL 17", "Projecao do saldo")
   ContainerDb(redis, "Cache", "Redis 7 / Valkey", "So no consolidado")
 }
 System_Ext(idp, "Cognito ou Keycloak", "JWT OIDC")
-Rel(comerciante, lanc, "POST e GET /api/v1/lancamentos", "HTTPS")
-Rel(comerciante, cons, "GET /api/v1/consolidados", "HTTPS")
-Rel(lanc, idp, "Valida JWT", "JWKS")
-Rel(cons, idp, "Valida JWT", "JWKS")
+Rel(comerciante, cf, "HTTPS /api/v1", "TLS")
+Rel(cf, apigw, "Origem HTTPS", "X-Origin-Verify")
+Rel(apigw, alb, "VPC Link v2", "HTTP")
+Rel(alb, lanc, "POST e GET /api/v1/lancamentos", "HTTP")
+Rel(alb, cons, "GET /api/v1/consolidados", "HTTP")
+Rel(lanc, idp, "Valida JWT de novo", "JWKS")
+Rel(cons, idp, "Valida JWT de novo", "JWKS")
 Rel(lanc, dbl, "Grava fato e outbox", "JDBC")
 Rel(lanc, sns, "Publica depois do commit", "AWS SDK v2")
 Rel(sns, sqs, "Entrega raw", "assinatura")
@@ -38,18 +44,18 @@ Rel(cons, redis, "Cache-aside", "Redis")
 
 | Peça | Escolha |
 |---|---|
-| Aplicação | Java 25, Spring Boot 4, Maven wrapper, um projeto por serviço |
+| Aplicação | Java 25, Spring Boot 4.0.9, Resilience4j 2.4.0, Maven wrapper, um projeto por serviço |
 | Arquitetura | Dois microsserviços, hexagonal, CQRS, outbox, consumidor idempotente |
-| Dados | PostgreSQL 17, um banco por serviço, Flyway. RDS Multi-AZ em produção |
-| Mensageria | SNS + SQS + DLQ. LocalStack no laboratório. AWS SDK v2 |
+| Dados | PostgreSQL 17, um banco por serviço, Flyway. RDS Multi-AZ em produção. Réplica de leitura desligada até gatilho |
+| Mensageria | SNS + SQS + DLQ. LocalStack no laboratório. AWS SDK v2. Trace propagado por atributo |
 | Cache | Redis 7 local, Valkey no ElastiCache, só no consolidado |
-| Segurança | OAuth2/OIDC. Cognito na AWS, Keycloak no local. JWT validado no serviço |
-| Borda | ALB + WAF, região `sa-east-1` |
-| Execução | ECS Fargate (ARM) |
+| Segurança | OAuth2/OIDC. Cognito na AWS, Keycloak no local. JWT validado no serviço. Rotação de senha do RDS |
+| Borda | CloudFront + WAF + VPC Origin + ALB interno, região `us-east-1` |
+| Execução | ECS Fargate (ARM). EKS é evolução, não o deploy de hoje |
 | Observabilidade | OpenTelemetry. ADOT, CloudWatch e X-Ray na AWS. Grafana LGTM no local |
-| Infra | Terraform (provider AWS 6.x) |
+| Infra | Terraform (provider AWS 6.x), ambientes `dev`, `hml` e `prod`, state em S3 |
 
-Licença de runtime: nenhuma paga. Detalhe e a estimativa de infra alinhada ao Terraform (produção em São Paulo cerca de **USD 1.214/mês**; dev AWS ligado o mês inteiro cerca de **USD 385/mês**; local **USD 0**) em [docs/08-custos.md](docs/08-custos.md).
+Licença de runtime: nenhuma paga. A estimativa em `us-east-1`, com os três ambientes ligados o mês inteiro e o API Gateway REST ligado, fica em cerca de **USD 143/mês** (dev), **USD 356/mês** (hml) e **USD 777/mês** (prod). A mesma produção em `sa-east-1`, com o mesmo unitário de request da REST API (não reconsultado naquela região nesta passagem), sairia cerca de **USD 1.467/mês**. Local continua **USD 0**. Detalhe em [docs/08-custos.md](docs/08-custos.md).
 
 ## Estrutura do repositório
 
@@ -62,7 +68,7 @@ fluxo-caixa/
 │   ├── lancamentos-service/       # porta 8081
 │   └── consolidado-service/       # porta 8082
 ├── infra/
-│   ├── terraform/                 # dev e prod
+│   ├── terraform/                 # dev, hml e prod
 │   └── local/                     # docker-compose
 ├── tests/
 │   ├── load/                      # k6
@@ -180,7 +186,7 @@ O que cada camada cobre está em [docs/11-testes.md](docs/11-testes.md).
 
 ## Deploy na AWS
 
-Produção em `sa-east-1`: VPC em três zonas, ALB com WAF, ECS Fargate com no mínimo duas tasks por serviço, RDS PostgreSQL separado e Multi-AZ para cada serviço, ElastiCache com réplica, SNS/SQS/DLQ, Cognito e ADOT. O passo a passo de apply, state e variáveis fica em [infra/terraform/README.md](infra/terraform/README.md). A topologia e o DR estão em [docs/03-arquitetura/deployment-aws.md](docs/03-arquitetura/deployment-aws.md). O deploy da aplicação é rolling com circuit breaker e rollback ([ADR 0020](docs/04-adr/0020-estrategia-de-deploy.md)).
+Produção em `us-east-1`: CloudFront com WAF, API Gateway REST regional com WAF próprio e VPC Link v2 até um ALB interno, VPC em três zonas, ECS Fargate com no mínimo duas tasks por serviço, RDS PostgreSQL separado e Multi-AZ para cada serviço, ElastiCache com réplica, SNS/SQS/DLQ, Cognito, Secrets Manager com rotação e ADOT. Há também `dev` e `hml`, menores. `enable_api_gateway = false` tira o gateway e volta o CloudFront à VPC Origin. O passo a passo de apply, state e variáveis fica em [infra/terraform/README.md](infra/terraform/README.md). A topologia e o DR estão em [docs/03-arquitetura/deployment-aws.md](docs/03-arquitetura/deployment-aws.md). O deploy da aplicação é rolling com circuit breaker e rollback ([ADR 0020](docs/04-adr/0020-estrategia-de-deploy.md)), promovendo a mesma imagem de dev para hml e prod.
 
 ## Documentação
 
@@ -191,14 +197,17 @@ Produção em `sa-east-1`: VPC em três zonas, ALB com WAF, ECS Fargate com no m
 | [Requisitos](docs/01-contexto-e-requisitos.md) | RF, RNF e capacidade |
 | [Domínio](docs/02-dominio-ddd.md) | DDD, context map, evento |
 | [Arquitetura](docs/03-arquitetura/README.md) | C4, fluxos, AWS, Structurizr |
-| [ADRs](docs/04-adr/README.md) | Vinte decisões, de 0001 a 0020 |
+| [ADRs](docs/04-adr/README.md) | Decisões de 0001 a 0031 |
 | [RNF operacionais](docs/05-requisitos-nao-funcionais.md) | SLO, error budget, k6 |
-| [Segurança](docs/06-seguranca.md) | STRIDE, OWASP API, LGPD |
-| [Observabilidade](docs/07-observabilidade.md) | Métricas, alarmes, runbooks |
-| [Custos](docs/08-custos.md) | USD e BRL, dev e prod, licenças |
+| [Segurança](docs/06-seguranca.md) | STRIDE, OWASP API, LGPD, rotação |
+| [Observabilidade](docs/07-observabilidade.md) | Trace ponta a ponta, alarmes, runbooks |
+| [Custos](docs/08-custos.md) | USD e BRL, dev, hml e prod |
 | [Transição](docs/09-arquitetura-de-transicao.md) | Strangler a partir do legado |
 | [Evoluções](docs/10-evolucoes-futuras.md) | O que ficou de fora e por quê |
 | [Testes](docs/11-testes.md) | Pirâmide e comandos |
+| [Desempenho](docs/12-desempenho-e-dados.md) | Índices, réplica, cache, lake |
+| [ECS e EKS](docs/13-ecs-vs-eks.md) | Critério, stack e preço de observar |
+| [CI/CD](docs/14-cicd-e-qualidade.md) | Pipeline e ferramentas |
 
 ## Saúde dos processos
 

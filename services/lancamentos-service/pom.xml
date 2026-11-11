@@ -23,7 +23,7 @@
         <aws-jdbc.version>4.6.0</aws-jdbc.version>
         <resilience4j.version>2.4.0</resilience4j.version>
         <!-- 3.0.x acompanha Boot 4.0. 3.1+ exige Boot 4.1. -->
-        <springdoc.version>3.0.3</springdoc.version>
+        <springdoc.version>3.2.0</springdoc.version>
         <archunit.version>1.5.1</archunit.version>
         <jacoco.version>0.8.16</jacoco.version>
     </properties>

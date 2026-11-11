@@ -8,7 +8,12 @@ O requisito que organiza a arquitetura é este: o controle de lançamentos perma
 
 A documentação final do desafio está em PDF, diagramada e com sumário, na pasta [`documentos-entregaveis-desafio/`](documentos-entregaveis-desafio/README.md). Para ler tudo de uma vez, abra a [documentação completa](documentos-entregaveis-desafio/fluxo-caixa-documentacao-completa.pdf). Os documentos também estão separados por tema (requisitos, DDD, arquitetura e C4, ADRs, segurança, observabilidade, custos, transição, testes, entre outros).
 
-A pasta [`documentos-brutos/`](documentos-brutos/README.md) contém os **documentos brutos**: as fontes em Markdown a partir das quais os PDFs são gerados (`make pdf`). Elas ficam versionadas junto com o código e prevalecem se houver divergência.
+A pasta [`documentos-brutos/`](documentos-brutos/README.md) (antiga `docs/`) contém os **documentos brutos**: as fontes em Markdown, com os diagramas em `documentos-brutos/assets/diagramas/`, a partir das quais os PDFs são gerados (`make pdf`). Elas ficam versionadas junto com o código e prevalecem se houver divergência. A correspondência entre cada PDF e sua fonte está na seção [Documentação](#documentação).
+
+| Pasta | O que é | Para quem |
+|---|---|---|
+| [`documentos-entregaveis-desafio/`](documentos-entregaveis-desafio/README.md) | Entregáveis finais em PDF, com capa, sumário e diagramas | Avaliação e leitura |
+| [`documentos-brutos/`](documentos-brutos/README.md) | Fontes em Markdown (antiga `docs/`), ADRs, blueprint, Structurizr e diagramas | Manutenção e revisão no GitHub |
 
 ## Como o requisito é atendido
 
@@ -26,7 +31,7 @@ O `lancamentos-service` não chama o `consolidado-service`. O POST grava o lanç
 | Mensageria | SNS + SQS + DLQ. LocalStack no laboratório. AWS SDK v2. Trace propagado por atributo |
 | Cache | Redis 7 local, Valkey no ElastiCache, só no consolidado |
 | Segurança | OAuth2/OIDC. Cognito na AWS, Keycloak no local. JWT validado no serviço. Rotação de senha do RDS |
-| Borda | CloudFront + WAF + VPC Origin + ALB interno, região `us-east-1` |
+| Borda | CloudFront + WAF + API Gateway REST regional + VPC Link v2 + ALB interno, região `us-east-1` (VPC Origin direto como alternativa) |
 | Execução | ECS Fargate (ARM). EKS é evolução, não o deploy de hoje |
 | Observabilidade | OpenTelemetry. ADOT, CloudWatch e X-Ray na AWS. Grafana LGTM no local |
 | Infra | Terraform (provider AWS 6.x), ambientes `dev`, `hml` e `prod`, state em S3 |
@@ -40,7 +45,7 @@ fluxo-caixa/
 ├── README.md
 ├── Makefile
 ├── documentos-entregaveis-desafio/ # entregáveis finais em PDF
-├── documentos-brutos/             # documentos brutos (fontes Markdown) e blueprint
+├── documentos-brutos/             # documentos brutos (antiga docs/): fontes Markdown, ADRs e diagramas
 ├── services/
 │   ├── lancamentos-service/       # porta 8081
 │   └── consolidado-service/       # porta 8082
@@ -168,27 +173,30 @@ Produção em `us-east-1`: CloudFront com WAF, API Gateway REST regional com WAF
 
 ## Documentação
 
-Os entregáveis em PDF estão em [`documentos-entregaveis-desafio/`](documentos-entregaveis-desafio/README.md). A tabela abaixo aponta para os documentos brutos em Markdown, em `documentos-brutos/`, que são a fonte desses PDFs.
+Cada tema tem o PDF entregável, em [`documentos-entregaveis-desafio/`](documentos-entregaveis-desafio/README.md), e o documento bruto em Markdown que o origina, em [`documentos-brutos/`](documentos-brutos/README.md) (antiga `docs/`). O volume único com tudo é a [documentação completa em PDF](documentos-entregaveis-desafio/fluxo-caixa-documentacao-completa.pdf).
 
-| Documento | Conteúdo |
-|---|---|
-| [Entregáveis em PDF](documentos-entregaveis-desafio/README.md) | Versão final diagramada de toda a documentação |
-| [Índice](documentos-brutos/README.md) | Mapa de toda a entrega |
-| [Blueprint](documentos-brutos/blueprint-tecnico.md) | Contrato: nomes, portas, evento, SLOs |
-| [Requisitos](documentos-brutos/01-contexto-e-requisitos.md) | RF, RNF e capacidade |
-| [Domínio](documentos-brutos/02-dominio-ddd.md) | DDD, context map, evento |
-| [Arquitetura](documentos-brutos/03-arquitetura/README.md) | C4, fluxos, AWS, Structurizr |
-| [ADRs](documentos-brutos/04-adr/README.md) | Decisões de 0001 a 0031 |
-| [RNF operacionais](documentos-brutos/05-requisitos-nao-funcionais.md) | SLO, error budget, k6 |
-| [Segurança](documentos-brutos/06-seguranca.md) | STRIDE, OWASP API, LGPD, rotação |
-| [Observabilidade](documentos-brutos/07-observabilidade.md) | Trace ponta a ponta, alarmes, runbooks |
-| [Custos](documentos-brutos/08-custos.md) | USD e BRL, dev, hml e prod |
-| [Transição](documentos-brutos/09-arquitetura-de-transicao.md) | Strangler a partir do legado |
-| [Evoluções](documentos-brutos/10-evolucoes-futuras.md) | O que ficou de fora e por quê |
-| [Testes](documentos-brutos/11-testes.md) | Pirâmide e comandos |
-| [Desempenho](documentos-brutos/12-desempenho-e-dados.md) | Índices, réplica, cache, lake |
-| [ECS e EKS](documentos-brutos/13-ecs-vs-eks.md) | Critério, stack e preço de observar |
-| [CI/CD](documentos-brutos/14-cicd-e-qualidade.md) | Pipeline e ferramentas |
+| Tema | PDF entregável | Documento bruto | Conteúdo |
+|---|---|---|---|
+| Visão geral | [00](documentos-entregaveis-desafio/00-visao-geral-e-guia-de-execucao.pdf) | [README](README.md) e [índice](documentos-brutos/README.md) | Solução, execução local e mapa dos requisitos |
+| Requisitos | [01](documentos-entregaveis-desafio/01-contexto-e-requisitos.pdf) | [01-contexto-e-requisitos.md](documentos-brutos/01-contexto-e-requisitos.md) | RF, RNF e capacidade |
+| Domínio (DDD) | [02](documentos-entregaveis-desafio/02-dominio-e-capacidades-ddd.pdf) | [02-dominio-ddd.md](documentos-brutos/02-dominio-ddd.md) | Capacidades, context map, evento |
+| Arquitetura e C4 | [03](documentos-entregaveis-desafio/03-arquitetura-alvo-c4-e-fluxos.pdf) | [03-arquitetura/](documentos-brutos/03-arquitetura/README.md) | C4, fluxos, integração, AWS, Structurizr |
+| ADRs | [04](documentos-entregaveis-desafio/04-decisoes-arquiteturais-adrs.pdf) | [04-adr/](documentos-brutos/04-adr/README.md) | Decisões de 0001 a 0031 |
+| RNF operacionais | [05](documentos-entregaveis-desafio/05-requisitos-nao-funcionais.pdf) | [05-requisitos-nao-funcionais.md](documentos-brutos/05-requisitos-nao-funcionais.md) | SLO, error budget, k6 |
+| Segurança | [06](documentos-entregaveis-desafio/06-seguranca.pdf) | [06-seguranca.md](documentos-brutos/06-seguranca.md) | STRIDE, OWASP API, LGPD, rotação |
+| Observabilidade | [07](documentos-entregaveis-desafio/07-observabilidade-e-monitoramento.pdf) | [07-observabilidade.md](documentos-brutos/07-observabilidade.md) | Trace ponta a ponta, alarmes, runbooks |
+| Custos | [08](documentos-entregaveis-desafio/08-estimativa-de-custos.pdf) | [08-custos.md](documentos-brutos/08-custos.md) | USD e BRL, dev, hml e prod |
+| Transição | [09](documentos-entregaveis-desafio/09-arquitetura-de-transicao.pdf) | [09-arquitetura-de-transicao.md](documentos-brutos/09-arquitetura-de-transicao.md) | Strangler a partir do legado |
+| Evoluções | [10](documentos-entregaveis-desafio/10-evolucoes-futuras.pdf) | [10-evolucoes-futuras.md](documentos-brutos/10-evolucoes-futuras.md) | O que ficou de fora e por quê |
+| Testes | [11](documentos-entregaveis-desafio/11-testes.pdf) | [11-testes.md](documentos-brutos/11-testes.md) | Pirâmide e comandos |
+| Desempenho | [12](documentos-entregaveis-desafio/12-desempenho-e-dados.pdf) | [12-desempenho-e-dados.md](documentos-brutos/12-desempenho-e-dados.md) | Índices, réplica, cache, lake |
+| ECS e EKS | [13](documentos-entregaveis-desafio/13-ecs-vs-eks.pdf) | [13-ecs-vs-eks.md](documentos-brutos/13-ecs-vs-eks.md) | Critério, stack e preço de observar |
+| CI/CD | [14](documentos-entregaveis-desafio/14-cicd-e-qualidade.pdf) | [14-cicd-e-qualidade.md](documentos-brutos/14-cicd-e-qualidade.md) | Pipeline e ferramentas |
+| Blueprint | [15](documentos-entregaveis-desafio/15-blueprint-tecnico.pdf) | [blueprint-tecnico.md](documentos-brutos/blueprint-tecnico.md) | Contrato: nomes, portas, evento, SLOs |
+| Serviços e local | [16](documentos-entregaveis-desafio/16-servicos-e-ambiente-local.pdf) | READMEs de [lançamentos](services/lancamentos-service/README.md), [consolidado](services/consolidado-service/README.md) e [infra local](infra/local/README.md) | Guia dos serviços e laboratório |
+| Terraform | [17](documentos-entregaveis-desafio/17-infraestrutura-terraform.pdf) | [infra/terraform/README.md](infra/terraform/README.md) e módulos | Stack, ambientes e módulos |
+
+Depois de alterar um documento bruto, rode `make pdf` para atualizar os PDFs.
 
 ## Saúde dos processos
 

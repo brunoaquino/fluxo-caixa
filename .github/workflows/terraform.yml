@@ -24,7 +24,7 @@ jobs:
   fmt:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.14.7
@@ -39,7 +39,7 @@ jobs:
       matrix:
         env: [dev, hml, prod]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.14.7
@@ -52,7 +52,7 @@ jobs:
     needs: fmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.14.7
@@ -65,7 +65,7 @@ jobs:
   tflint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: terraform-linters/setup-tflint@v6
       - name: Init do plugin AWS
         working-directory: infra/terraform
@@ -83,7 +83,7 @@ jobs:
       matrix:
         module: [messaging, network, alb, ecs-service, rds-postgres, edge]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.14.7
@@ -97,7 +97,7 @@ jobs:
   checkov:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Checkov
         uses: bridgecrewio/checkov-action@v12
         with:
@@ -110,7 +110,7 @@ jobs:
   trivy-config:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Trivy config
         uses: aquasecurity/trivy-action@0.36.0
         with:
@@ -130,7 +130,7 @@ jobs:
       id-token: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - id: gate
         env:
           KEY: ${{ secrets.INFRACOST_API_KEY }}
@@ -189,7 +189,7 @@ jobs:
         env: [dev, hml, prod]
     environment: ${{ matrix.env }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Sem role, sem plan
         if: vars.AWS_PLAN_ROLE_ARN == '' || vars.TF_STATE_BUCKET == ''
         run: echo "AWS_PLAN_ROLE_ARN ou TF_STATE_BUCKET ausente no environment ${{ matrix.env }}. Plan ignorado."

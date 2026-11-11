@@ -73,7 +73,7 @@ jobs:
       digest_lancamentos: ${{ steps.build-lancamentos.outputs.digest }}
       digest_consolidado: ${{ steps.build-consolidado.outputs.digest }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Role de deploy
         env:
@@ -144,7 +144,7 @@ jobs:
           - service: consolidado
             container: consolidado
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -230,7 +230,7 @@ jobs:
           - service: consolidado
             container: consolidado
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Tag obrigatoria
         run: |

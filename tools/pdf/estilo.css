@@ -1,0 +1,380 @@
+:root {
+  --navy: #1F3A5F;
+  --navy-escuro: #142841;
+  --teal: #0F766E;
+  --teal-claro: #E6F4F1;
+  --laranja: #EA7A12;
+  --texto: #1E293B;
+  --suave: #64748B;
+  --linha: #E2E8F0;
+  --fundo: #F8FAFC;
+}
+
+@page {
+  size: A4;
+  margin: 22mm 18mm 20mm 18mm;
+  @top-left {
+    font: 600 8pt -apple-system, "Helvetica Neue", Arial, sans-serif;
+    color: #64748B;
+    vertical-align: bottom;
+    padding-bottom: 4mm;
+    border-bottom: 0.4pt solid #CBD5E1;
+  }
+  @top-right {
+    content: "Desafio de Arquiteto de Soluções";
+    font: 500 8pt -apple-system, "Helvetica Neue", Arial, sans-serif;
+    color: #94A3B8;
+    vertical-align: bottom;
+    padding-bottom: 4mm;
+    border-bottom: 0.4pt solid #CBD5E1;
+  }
+  @bottom-left {
+    content: "github.com/brunoaquino/fluxo-caixa";
+    font: 500 8pt -apple-system, "Helvetica Neue", Arial, sans-serif;
+    color: #94A3B8;
+  }
+  @bottom-right {
+    content: "Página " counter(page) " de " counter(pages);
+    font: 600 8pt -apple-system, "Helvetica Neue", Arial, sans-serif;
+    color: #1F3A5F;
+  }
+}
+
+@page :first {
+  margin: 0;
+  @top-left { content: none; border: none; }
+  @top-right { content: none; border: none; }
+  @bottom-left { content: none; }
+  @bottom-right { content: none; }
+}
+
+* { box-sizing: border-box; }
+
+html {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  font-size: 10pt;
+  line-height: 1.55;
+  color: var(--texto);
+  hyphens: auto;
+}
+
+a { color: var(--teal); text-decoration: none; }
+
+/* ---------- Capa ---------- */
+.capa {
+  height: 297mm;
+  display: flex;
+  flex-direction: column;
+  break-after: page;
+}
+
+.capa-faixa {
+  flex: 1 1 auto;
+  padding: 34mm 22mm 20mm;
+  color: #fff;
+  background:
+    radial-gradient(circle at 85% 18%, rgba(15, 118, 110, .55) 0, rgba(15, 118, 110, 0) 45%),
+    radial-gradient(circle at 10% 90%, rgba(234, 122, 18, .28) 0, rgba(234, 122, 18, 0) 40%),
+    linear-gradient(160deg, var(--navy) 0%, var(--navy-escuro) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  position: relative;
+}
+
+.capa-marca {
+  position: absolute;
+  top: 22mm;
+  left: 22mm;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12pt;
+  font-weight: 600;
+  letter-spacing: .02em;
+}
+
+.capa-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--teal);
+  font-weight: 800;
+  font-size: 11pt;
+}
+
+.capa-numero {
+  font-size: 10pt;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: #99F6E4;
+  margin-bottom: 6mm;
+}
+
+.capa-titulo {
+  font-size: 34pt;
+  line-height: 1.12;
+  font-weight: 800;
+  margin: 0 0 6mm;
+  max-width: 150mm;
+  border: none;
+  color: #fff;
+}
+
+.capa-subtitulo {
+  font-size: 13pt;
+  line-height: 1.45;
+  color: #CBD5E1;
+  max-width: 140mm;
+  margin: 0;
+}
+
+.capa-meta {
+  flex: 0 0 auto;
+  padding: 12mm 22mm 16mm;
+  background: #fff;
+  border-top: 4px solid var(--laranja);
+}
+
+.capa-meta dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6mm 12mm;
+  margin: 0 0 8mm;
+}
+
+.capa-meta dt {
+  font-size: 7.5pt;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--suave);
+}
+
+.capa-meta dd { margin: 1mm 0 0; font-size: 10.5pt; font-weight: 600; color: var(--navy); }
+
+.capa-stack {
+  margin: 0;
+  font-size: 9pt;
+  color: var(--suave);
+  border-top: 1px solid var(--linha);
+  padding-top: 5mm;
+}
+
+/* ---------- Sumário ---------- */
+.sumario { break-after: page; }
+
+.sumario-titulo {
+  font-size: 22pt;
+  color: var(--navy);
+  margin: 0 0 8mm;
+  padding-bottom: 3mm;
+  border-bottom: 3px solid var(--teal);
+}
+
+.sumario ol { list-style: none; margin: 0; padding: 0; }
+
+.sumario li { margin: 0; break-inside: avoid; }
+
+.sumario li a {
+  display: flex;
+  align-items: baseline;
+  gap: 4mm;
+  padding: 2.2mm 0;
+  border-bottom: 1px dotted #CBD5E1;
+  color: var(--texto);
+}
+
+.sumario .t { flex: 1 1 auto; }
+.sumario .pg { flex: 0 0 auto; font-weight: 600; color: var(--navy); font-variant-numeric: tabular-nums; }
+
+.sumario li.n0 a {
+  margin-top: 4mm;
+  font-weight: 800;
+  color: var(--navy);
+  border-bottom: 1.5px solid var(--navy);
+  font-size: 11pt;
+}
+
+.sumario li.n1 a { font-weight: 600; }
+.sumario li.n0 ~ li.n1 a { padding-left: 6mm; font-weight: 500; }
+.sumario li.n2 a { font-weight: 500; }
+
+/* ---------- Divisórias do volume completo ---------- */
+.parte {
+  break-before: page;
+  break-after: page;
+  min-height: 230mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 6mm;
+  border-left: 6px solid var(--teal);
+}
+
+.parte-numero {
+  font-size: 10pt;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--teal);
+}
+
+h1.parte-titulo {
+  font-size: 30pt;
+  color: var(--navy);
+  border: none;
+  margin: 4mm 0;
+  padding: 0;
+}
+
+.parte-subtitulo { font-size: 12pt; color: var(--suave); margin: 0; }
+
+/* ---------- Conteúdo ---------- */
+section.doc { break-before: page; }
+.sumario + main > section.doc:first-child { break-before: auto; }
+
+.origem {
+  font-size: 7.5pt;
+  color: #94A3B8;
+  margin-bottom: 3mm;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.origem a { color: #94A3B8; }
+
+h1, h2, h3, h4 {
+  color: var(--navy);
+  line-height: 1.25;
+  break-after: avoid;
+  font-weight: 700;
+}
+
+h1 {
+  font-size: 21pt;
+  margin: 0 0 6mm;
+  padding-bottom: 3mm;
+  border-bottom: 3px solid var(--teal);
+}
+
+h2 {
+  font-size: 14.5pt;
+  margin: 9mm 0 3mm;
+  padding-left: 3mm;
+  border-left: 4px solid var(--teal);
+}
+
+h3 { font-size: 11.5pt; margin: 6mm 0 2mm; color: var(--teal); }
+h4 { font-size: 10.5pt; margin: 5mm 0 2mm; }
+
+p { margin: 0 0 3mm; orphans: 3; widows: 3; }
+
+ul, ol { margin: 0 0 3mm; padding-left: 6mm; }
+li { margin: 0 0 1mm; }
+li > p { margin: 0 0 1mm; }
+
+strong { color: #0F172A; }
+
+blockquote {
+  margin: 4mm 0;
+  padding: 3mm 5mm;
+  background: var(--teal-claro);
+  border-left: 4px solid var(--teal);
+  border-radius: 0 6px 6px 0;
+  color: #134E4A;
+}
+
+blockquote p:last-child { margin-bottom: 0; }
+
+hr { border: none; border-top: 1px solid var(--linha); margin: 6mm 0; }
+
+code {
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 8.6pt;
+  background: #F1F5F9;
+  color: #0F3D3A;
+  padding: .3mm 1.2mm;
+  border-radius: 3px;
+  overflow-wrap: anywhere;
+  hyphens: none;
+}
+
+pre {
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 8.2pt;
+  line-height: 1.45;
+  background: var(--fundo);
+  border: 1px solid var(--linha);
+  border-left: 3px solid var(--navy);
+  border-radius: 6px;
+  padding: 3mm 4mm;
+  margin: 0 0 4mm;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  hyphens: none;
+  break-inside: auto;
+}
+
+pre code, div.sourceCode pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
+div.sourceCode { margin: 0 0 4mm; background: none; }
+div.sourceCode pre { margin: 0; }
+pre > code.sourceCode > span { display: inline; }
+pre.numberSource { margin-left: 0; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 2mm 0 5mm;
+  font-size: 8.6pt;
+  line-height: 1.4;
+  break-inside: auto;
+}
+
+thead { display: table-header-group; }
+tr { break-inside: avoid; }
+
+th {
+  background: var(--navy);
+  color: #fff;
+  font-weight: 600;
+  text-align: left;
+  padding: 2mm 2.5mm;
+}
+
+td {
+  padding: 1.8mm 2.5mm;
+  border-bottom: 1px solid var(--linha);
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+tbody tr:nth-child(even) td { background: var(--fundo); }
+
+img {
+  display: block;
+  max-width: 100%;
+  max-height: 235mm;
+  height: auto;
+  margin: 4mm auto 5mm;
+  break-inside: avoid;
+}
+
+p:has(> img:only-child) { break-inside: avoid; }
+
+figure { margin: 4mm 0; break-inside: avoid; }
+figcaption { display: none; }
+
+details > summary { font-weight: 600; color: var(--navy); }
+
+input[type="checkbox"] { margin-right: 2mm; }

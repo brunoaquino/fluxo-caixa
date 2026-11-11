@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1130" width="1600" height="1130" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-labelledby="t d">
+<title id="t">C4 — Nível 3: componentes do consolidado-service</title>
+<desc id="d">Componentes internos do consolidado-service: controller de consulta, segurança, casos de uso de consulta e de aplicação de lançamento, domínio SaldoDiario, consumidor SQS, tradutor ACL, repositório JDBC e cache Redis, com Postgres, Redis/Valkey, fila SQS e Cognito/Keycloak fora do container.</desc>
+<defs>
+<filter id="sh" x="-5%" y="-5%" width="110%" height="120%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0F172A" flood-opacity="0.08"/></filter>
+<marker id="ah" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#475569"/></marker>
+<marker id="ahr" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#DC2626"/></marker>
+</defs>
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<text x="40" y="62" font-size="30" font-weight="700" fill="#1F3A5F">C4 — Nível 3: componentes do consolidado-service</text>
+<rect x="40" y="250" width="1520" height="650" rx="12" fill="#F8FAFC" stroke="#94A3B8" stroke-width="1.6" stroke-dasharray="6 5"/>
+<text x="56.0" y="274.0" font-size="14" font-weight="600" fill="#475569" text-anchor="start">consolidado-service</text>
+<text x="208.2" y="274.0" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="start">[Container]</text>
+<rect x="65" y="95" width="260" height="115" rx="10" fill="#F1F5F9" stroke="#94A3B8" stroke-width="2" filter="url(#sh)"/>
+<g fill="none" stroke="#94A3B8" stroke-width="1.6"><rect x="300" y="108" width="16" height="11" rx="2"/><path d="M303.5,108 V105.5 a4.5,4.5 0 0 1 9,0 V108"/></g>
+<path d="M857,107 A140.0,12 0 0 1 1137,107 V198 A140.0,12 0 0 1 857,198 Z" fill="#FEE2E2" stroke="#DC2626" stroke-width="2" filter="url(#sh)"/>
+<path d="M857,107 A140.0,12 0 0 0 1137,107" fill="none" stroke="#DC2626" stroke-width="2"/>
+<rect x="1243" y="95" width="290" height="115" rx="10" fill="#F3E8FF" stroke="#7C3AED" stroke-width="2" filter="url(#sh)"/>
+<g stroke="#7C3AED" stroke-width="1.8" stroke-linecap="round"><line x1="1508" y1="104" x2="1524" y2="104"/><line x1="1508" y1="109" x2="1524" y2="109"/><line x1="1508" y1="114" x2="1524" y2="114"/></g>
+<rect x="65" y="300" width="260" height="118" rx="10" fill="#E6F4F1" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<g fill="none" stroke="#0F766E" stroke-width="1.5"><rect x="303" y="306" width="13" height="16" rx="2"/><rect x="300" y="309" width="7" height="3.5" rx="1" fill="#FFFFFF"/><rect x="300" y="315.5" width="7" height="3.5" rx="1" fill="#FFFFFF"/></g>
+<rect x="431" y="300" width="320" height="118" rx="10" fill="#E6F4F1" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<g fill="none" stroke="#0F766E" stroke-width="1.5"><rect x="729" y="306" width="13" height="16" rx="2"/><rect x="726" y="309" width="7" height="3.5" rx="1" fill="#FFFFFF"/><rect x="726" y="315.5" width="7" height="3.5" rx="1" fill="#FFFFFF"/></g>
+<rect x="1243" y="300" width="290" height="118" rx="10" fill="#E6F4F1" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<g fill="none" stroke="#0F766E" stroke-width="1.5"><rect x="1511" y="306" width="13" height="16" rx="2"/><rect x="1508" y="309" width="7" height="3.5" rx="1" fill="#FFFFFF"/><rect x="1508" y="315.5" width="7" height="3.5" rx="1" fill="#FFFFFF"/></g>
+<rect x="431" y="518" width="320" height="118" rx="10" fill="#E6F4F1" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<g fill="none" stroke="#0F766E" stroke-width="1.5"><rect x="729" y="524" width="13" height="16" rx="2"/><rect x="726" y="527" width="7" height="3.5" rx="1" fill="#FFFFFF"/><rect x="726" y="533.5" width="7" height="3.5" rx="1" fill="#FFFFFF"/></g>
+<rect x="857" y="518" width="280" height="118" rx="10" fill="#E6F4F1" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<g fill="none" stroke="#0F766E" stroke-width="1.5"><rect x="1115" y="524" width="13" height="16" rx="2"/><rect x="1112" y="527" width="7" height="3.5" rx="1" fill="#FFFFFF"/><rect x="1112" y="533.5" width="7" height="3.5" rx="1" fill="#FFFFFF"/></g>
+<rect x="1243" y="518" width="290" height="118" rx="10" fill="#E6F4F1" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<g fill="none" stroke="#0F766E" stroke-width="1.5"><rect x="1511" y="524" width="13" height="16" rx="2"/><rect x="1508" y="527" width="7" height="3.5" rx="1" fill="#FFFFFF"/><rect x="1508" y="533.5" width="7" height="3.5" rx="1" fill="#FFFFFF"/></g>
+<rect x="431" y="746" width="320" height="118" rx="10" fill="#E6F4F1" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<g fill="none" stroke="#0F766E" stroke-width="1.5"><rect x="729" y="752" width="13" height="16" rx="2"/><rect x="726" y="755" width="7" height="3.5" rx="1" fill="#FFFFFF"/><rect x="726" y="761.5" width="7" height="3.5" rx="1" fill="#FFFFFF"/></g>
+<rect x="857" y="746" width="280" height="118" rx="10" fill="#E6F4F1" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<g fill="none" stroke="#0F766E" stroke-width="1.5"><rect x="1115" y="752" width="13" height="16" rx="2"/><rect x="1112" y="755" width="7" height="3.5" rx="1" fill="#FFFFFF"/><rect x="1112" y="761.5" width="7" height="3.5" rx="1" fill="#FFFFFF"/></g>
+<rect x="1243" y="746" width="290" height="118" rx="10" fill="#E6F4F1" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<g fill="none" stroke="#0F766E" stroke-width="1.5"><rect x="1511" y="752" width="13" height="16" rx="2"/><rect x="1508" y="755" width="7" height="3.5" rx="1" fill="#FFFFFF"/><rect x="1508" y="761.5" width="7" height="3.5" rx="1" fill="#FFFFFF"/></g>
+<path d="M461.0,967 A130.0,12 0 0 1 721.0,967 V1063 A130.0,12 0 0 1 461.0,1063 Z" fill="#DBEAFE" stroke="#2563EB" stroke-width="2" filter="url(#sh)"/>
+<path d="M461.0,967 A130.0,12 0 0 0 721.0,967" fill="none" stroke="#2563EB" stroke-width="2"/>
+<path d="M431.0,359.0 L325.0,359.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M591.0,418.0 L591.0,518.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M751.0,577.0 L857.0,577.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M591.0,636.0 L591.0,746.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M1388.0,418.0 L1388.0,518.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M1288.0,636.0 L1288.0,691.0 L1057.0,691.0 L1057.0,746.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M1137.0,805.0 L1243.0,805.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M857.0,805.0 L751.0,805.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M937.0,746.0 L937.0,636.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M591.0,864.0 L591.0,955.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M997.0,518.0 L997.0,210.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M1388.0,300.0 L1388.0,210.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M195.0,300.0 L195.0,210.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<rect x="1243" y="964" width="34" height="16" rx="4" fill="#E6F4F1" stroke="#0F766E" stroke-width="1.6"/>
+<rect x="1243" y="988" width="34" height="16" rx="4" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.6"/>
+<rect x="1243" y="1012" width="34" height="16" rx="4" fill="#FEE2E2" stroke="#DC2626" stroke-width="1.6"/>
+<rect x="1243" y="1036" width="34" height="16" rx="4" fill="#F3E8FF" stroke="#7C3AED" stroke-width="1.6"/>
+<rect x="1243" y="1060" width="34" height="16" rx="4" fill="#F1F5F9" stroke="#94A3B8" stroke-width="1.6"/>
+<path d="M1243.0,1092.0 L1277.0,1092.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<text x="195.0" y="131.0" font-size="16" font-weight="600" fill="#334155" text-anchor="middle">Cognito ou Keycloak</text>
+<text x="195.0" y="151.0" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[OIDC]</text>
+<text x="195.0" y="170.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">JWKS</text>
+<text x="997.0" y="141.0" font-size="16" font-weight="600" fill="#7F1D1D" text-anchor="middle">Redis ou Valkey</text>
+<text x="997.0" y="161.0" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[cache]</text>
+<text x="997.0" y="180.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">Descartável</text>
+<text x="1388.0" y="131.0" font-size="16" font-weight="600" fill="#4C1D95" text-anchor="middle">SQS</text>
+<text x="1388.0" y="151.0" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[consolidado-lancamentos-queue]</text>
+<text x="1388.0" y="170.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">Buffer</text>
+<text x="195.0" y="336.0" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">ConfiguracaoSeguranca</text>
+<text x="195.0" y="356.0" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[config]</text>
+<text x="195.0" y="375.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">Escopo consolidado:read e</text>
+<text x="195.0" y="392.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">claim comerciante_id</text>
+<text x="591.0" y="336.0" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">ConsultaConsolidadoController</text>
+<text x="591.0" y="356.0" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[adapters.in.web]</text>
+<text x="591.0" y="375.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">GET do dia e do período.</text>
+<text x="591.0" y="392.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">Relatório inicio/fim/dias</text>
+<text x="1388.0" y="336.0" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">ConsumidorSqsLancamentos</text>
+<text x="1388.0" y="356.0" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[adapters.in.messaging]</text>
+<text x="1388.0" y="375.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">Long polling em</text>
+<text x="1388.0" y="392.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">CONSOLIDADO_QUEUE_URL</text>
+<text x="591.0" y="554.0" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">ConsultarSaldoDiarioService e</text>
+<text x="591.0" y="574.0" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">ConsultarRelatorioService</text>
+<text x="591.0" y="594.0" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[application.servico]</text>
+<text x="591.0" y="613.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">Cache-aside e saldo acumulado</text>
+<text x="997.0" y="554.0" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">CacheSaldoRedis</text>
+<text x="997.0" y="574.0" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[adapters.out.cache]</text>
+<text x="997.0" y="593.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">Versão por comerciante.</text>
+<text x="997.0" y="610.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">TTL 30s. REDIS_SSL</text>
+<text x="1388.0" y="554.0" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">TradutorEventoLancamento</text>
+<text x="1388.0" y="574.0" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[adapters.in.messaging]</text>
+<text x="1388.0" y="593.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">JSON v1 vira comando.</text>
+<text x="1388.0" y="610.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">Versão desconhecida falha</text>
+<text x="591.0" y="782.0" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">RepositorioConsolidadoJdbc</text>
+<text x="591.0" y="802.0" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[adapters.out.persistence]</text>
+<text x="591.0" y="821.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">saldos_diarios e</text>
+<text x="591.0" y="838.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">eventos_processados</text>
+<text x="997.0" y="782.0" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">AplicarLancamentoService</text>
+<text x="997.0" y="802.0" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[application.servico]</text>
+<text x="997.0" y="821.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">UPSERT atômico e</text>
+<text x="997.0" y="838.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">idempotência por eventId</text>
+<text x="1388.0" y="782.0" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">SaldoDiario</text>
+<text x="1388.0" y="802.0" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[domain.model]</text>
+<text x="1388.0" y="821.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">Invariante saldo =</text>
+<text x="1388.0" y="838.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">créditos − débitos</text>
+<text x="591.0" y="1001.0" font-size="16" font-weight="600" fill="#1E3A8A" text-anchor="middle">Postgres consolidado</text>
+<text x="591.0" y="1021.0" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[PostgreSQL 17]</text>
+<text x="591.0" y="1040.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">Projeção</text>
+<text x="378.0" y="335.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Autoriza</text>
+<text x="378.0" y="351.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">a leitura</text>
+<text x="600.0" y="473.0" font-size="13" font-weight="400" fill="#334155" text-anchor="start" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">GET /api/v1/consolidados</text>
+<text x="804.0" y="537.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Busca pela</text>
+<text x="804.0" y="553.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">geração</text>
+<text x="804.0" y="569.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">corrente</text>
+<text x="582.0" y="689.0" font-size="13" font-weight="400" fill="#334155" text-anchor="end" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Miss: lê saldo e</text>
+<text x="582.0" y="705.0" font-size="13" font-weight="400" fill="#334155" text-anchor="end" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">SUM acumulado</text>
+<text x="1379.0" y="473.0" font-size="13" font-weight="400" fill="#334155" text-anchor="end" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Entrega o corpo raw</text>
+<rect x="1075.4" y="681.5" width="194.2" height="20.0" rx="3" fill="#FFFFFF"/>
+<text x="1172.5" y="695.5" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Comando AplicarLancamento</text>
+<text x="1190.0" y="781.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Aplica crédito</text>
+<text x="1190.0" y="797.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">ou débito</text>
+<text x="804.0" y="765.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Atualiza saldo</text>
+<text x="804.0" y="781.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">e insere</text>
+<text x="804.0" y="797.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">event_id</text>
+<text x="928.0" y="696.0" font-size="13" font-weight="400" fill="#334155" text-anchor="end" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Incrementa a geração do comerciante</text>
+<text x="600.0" y="935.0" font-size="13" font-weight="400" fill="#334155" text-anchor="start" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">JDBC</text>
+<text x="1006.0" y="364.0" font-size="13" font-weight="400" fill="#334155" text-anchor="start" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">GET SET INCR</text>
+<text x="1379.0" y="238.0" font-size="13" font-weight="400" fill="#334155" text-anchor="end" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">ReceiveMessage e DeleteMessage</text>
+<text x="204.0" y="238.0" font-size="13" font-weight="400" fill="#334155" text-anchor="start" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Valida JWT</text>
+<text x="1243.0" y="950.0" font-size="13" font-weight="700" fill="#475569" text-anchor="start">Legenda</text>
+<text x="1287.0" y="977.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="start">Componente</text>
+<text x="1287.0" y="1001.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="start">Banco de dados</text>
+<text x="1287.0" y="1025.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="start">Cache</text>
+<text x="1287.0" y="1049.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="start">Fila</text>
+<text x="1287.0" y="1073.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="start">Sistema externo</text>
+<text x="1287.0" y="1097.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="start">Relação (origem → destino)</text>
+</svg>

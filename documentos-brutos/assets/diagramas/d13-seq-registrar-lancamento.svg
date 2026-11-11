@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 890" width="1600" height="890" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-labelledby="t d">
+<title id="t">Sequência interna do registrar lançamento</title>
+<desc id="d">LancamentoController envia o comando ao RegistrarLancamentoService, que cria Dinheiro e, conforme a chave de idempotência, devolve 200 com o recurso armazenado, 409 para corpo diferente ou, na primeira vez, registra o Lancamento, insere no LancamentoRepository, na Outbox e grava a chave no mesmo commit, devolvendo 201.</desc>
+<defs>
+<filter id="sh" x="-5%" y="-5%" width="110%" height="120%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0F172A" flood-opacity="0.08"/></filter>
+<marker id="ah" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#475569"/></marker>
+<marker id="ahr" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#DC2626"/></marker>
+</defs>
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<text x="40" y="62" font-size="30" font-weight="700" fill="#1F3A5F">Sequência interna do registrar lançamento</text>
+<rect x="75" y="285" width="1460" height="543" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.4"/>
+<path d="M75,285 H112.1250625 V299 L104.1250625,307 H75 Z" fill="#E2E8F0" stroke="#CBD5E1" stroke-width="1.2"/>
+<text x="84.0" y="300.5" font-size="12" font-weight="700" fill="#1F3A5F" text-anchor="start">alt</text>
+<text x="122.1" y="301.0" font-size="12.5" font-weight="600" fill="#475569" text-anchor="start">[chave repetida e mesmo corpo]</text>
+<line x1="75" y1="448" x2="1535" y2="448" stroke="#94A3B8" stroke-width="1.2" stroke-dasharray="6 5"/>
+<text x="85.0" y="466.0" font-size="12.5" font-weight="600" fill="#475569" text-anchor="start">[chave repetida e corpo diferente]</text>
+<line x1="75" y1="524" x2="1535" y2="524" stroke="#94A3B8" stroke-width="1.2" stroke-dasharray="6 5"/>
+<text x="85.0" y="542.0" font-size="12.5" font-weight="600" fill="#475569" text-anchor="start">[primeira vez]</text>
+<rect x="50.0" y="95" width="230" height="64" rx="10" fill="#E6F4F1" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<g fill="none" stroke="#0F766E" stroke-width="1.5"><rect x="255.0" y="101" width="16" height="16" rx="2"/><line x1="255.0" y1="106.5" x2="271.0" y2="106.5"/><line x1="255.0" y1="111.5" x2="271.0" y2="111.5"/></g>
+<line x1="165" y1="159" x2="165" y2="850" stroke="#CBD5E1" stroke-width="1.6" stroke-dasharray="6 5"/>
+<rect x="320.0" y="95" width="270" height="64" rx="10" fill="#E6F4F1" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<g fill="none" stroke="#0F766E" stroke-width="1.5"><rect x="565.0" y="101" width="16" height="16" rx="2"/><line x1="565.0" y1="106.5" x2="581.0" y2="106.5"/><line x1="565.0" y1="111.5" x2="581.0" y2="111.5"/></g>
+<line x1="455" y1="159" x2="455" y2="850" stroke="#CBD5E1" stroke-width="1.6" stroke-dasharray="6 5"/>
+<rect x="635.0" y="95" width="160" height="64" rx="10" fill="#E6F4F1" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<g fill="none" stroke="#0F766E" stroke-width="1.5"><rect x="770.0" y="101" width="16" height="16" rx="2"/><line x1="770.0" y1="106.5" x2="786.0" y2="106.5"/><line x1="770.0" y1="111.5" x2="786.0" y2="111.5"/></g>
+<line x1="715" y1="159" x2="715" y2="850" stroke="#CBD5E1" stroke-width="1.6" stroke-dasharray="6 5"/>
+<rect x="830.0" y="95" width="240" height="64" rx="10" fill="#FFFFFF" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<line x1="950" y1="159" x2="950" y2="850" stroke="#CBD5E1" stroke-width="1.6" stroke-dasharray="6 5"/>
+<rect x="1095.0" y="95" width="230" height="64" rx="10" fill="#FFFFFF" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<line x1="1210" y1="159" x2="1210" y2="850" stroke="#CBD5E1" stroke-width="1.6" stroke-dasharray="6 5"/>
+<rect x="1375.0" y="95" width="160" height="64" rx="10" fill="#FFFFFF" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<line x1="1455" y1="159" x2="1455" y2="850" stroke="#CBD5E1" stroke-width="1.6" stroke-dasharray="6 5"/>
+<path d="M192.0,210.0 L453.0,210.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M482.0,255.0 L713.0,255.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M482.0,340.0 L948.0,340.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M923.0,382.0 L457.0,382.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" stroke-dasharray="6 5" marker-end="url(#ah)"/>
+<path d="M428.0,424.0 L167.0,424.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" stroke-dasharray="6 5" marker-end="url(#ah)"/>
+<path d="M428.0,500.0 L167.0,500.0" fill="none" stroke="#DC2626" stroke-width="1.6" stroke-linejoin="round" stroke-dasharray="6 5" marker-end="url(#ahr)"/>
+<path d="M458.0,568.0 L491.0,568.0 L491.0,592.0 L459.0,592.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M482.0,636.0 L1208.0,636.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M482.0,678.0 L1453.0,678.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M482.0,720.0 L948.0,720.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M428.0,806.0 L167.0,806.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" stroke-dasharray="6 5" marker-end="url(#ah)"/>
+<text x="165.0" y="131.0" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">LancamentoController</text>
+<text x="455.0" y="131.0" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">RegistrarLancamentoService</text>
+<text x="715.0" y="131.0" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">Dinheiro</text>
+<text x="950.0" y="119.0" font-size="12" font-weight="400" fill="#64748B" text-anchor="middle" font-style="italic">«porta»</text>
+<text x="950.0" y="139.0" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">IdempotenciaRepository</text>
+<text x="1210.0" y="119.0" font-size="12" font-weight="400" fill="#64748B" text-anchor="middle" font-style="italic">«porta»</text>
+<text x="1210.0" y="139.0" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">LancamentoRepository</text>
+<text x="1455.0" y="119.0" font-size="12" font-weight="400" fill="#64748B" text-anchor="middle" font-style="italic">«porta»</text>
+<text x="1455.0" y="139.0" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">Outbox</text>
+<circle cx="180.0" cy="210.0" r="11" fill="#1F3A5F"/>
+<text x="180.0" y="214.2" font-size="12" font-weight="700" fill="#FFFFFF" text-anchor="middle">1</text>
+<rect x="199.5" y="187.0" width="248.0" height="20.0" rx="3" fill="#FFFFFF"/>
+<text x="323.5" y="201.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">comando com comercianteId do token</text>
+<circle cx="470.0" cy="255.0" r="11" fill="#1F3A5F"/>
+<text x="470.0" y="259.2" font-size="12" font-weight="700" fill="#FFFFFF" text-anchor="middle">2</text>
+<rect x="549.3" y="232.0" width="98.4" height="20.0" rx="3" fill="#FFFFFF"/>
+<text x="598.5" y="246.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">of BRL e valor</text>
+<circle cx="470.0" cy="340.0" r="11" fill="#1F3A5F"/>
+<text x="470.0" y="344.2" font-size="12" font-weight="700" fill="#FFFFFF" text-anchor="middle">3</text>
+<rect x="689.9" y="317.0" width="52.1" height="20.0" rx="3" fill="#FFFFFF"/>
+<text x="716.0" y="331.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">buscar</text>
+<circle cx="935.0" cy="382.0" r="11" fill="#1F3A5F"/>
+<text x="935.0" y="386.2" font-size="12" font-weight="700" fill="#FFFFFF" text-anchor="middle">4</text>
+<rect x="616.1" y="359.0" width="145.8" height="20.0" rx="3" fill="#FFFFFF"/>
+<text x="689.0" y="373.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">resposta armazenada</text>
+<circle cx="440.0" cy="424.0" r="11" fill="#1F3A5F"/>
+<text x="440.0" y="428.2" font-size="12" font-weight="700" fill="#FFFFFF" text-anchor="middle">5</text>
+<rect x="208.4" y="401.0" width="176.2" height="20.0" rx="3" fill="#FFFFFF"/>
+<text x="296.5" y="415.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">200 com o mesmo recurso</text>
+<circle cx="440.0" cy="500.0" r="11" fill="#1F3A5F"/>
+<text x="440.0" y="504.2" font-size="12" font-weight="700" fill="#FFFFFF" text-anchor="middle">6</text>
+<rect x="279.8" y="477.0" width="33.4" height="20.0" rx="3" fill="#FFFFFF"/>
+<text x="296.5" y="491.0" font-size="13" font-weight="700" fill="#DC2626" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">409</text>
+<circle cx="439.0" cy="568.0" r="11" fill="#1F3A5F"/>
+<text x="439.0" y="572.2" font-size="12" font-weight="700" fill="#FFFFFF" text-anchor="middle">7</text>
+<rect x="496.0" y="570.0" width="142.7" height="20.0" rx="3" fill="#FFFFFF"/>
+<text x="501.0" y="584.0" font-size="13" font-weight="400" fill="#334155" text-anchor="start" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Lancamento.registrar</text>
+<circle cx="470.0" cy="636.0" r="11" fill="#1F3A5F"/>
+<text x="470.0" y="640.2" font-size="12" font-weight="700" fill="#FFFFFF" text-anchor="middle">8</text>
+<rect x="821.9" y="613.0" width="48.2" height="20.0" rx="3" fill="#FFFFFF"/>
+<text x="846.0" y="627.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">inserir</text>
+<circle cx="470.0" cy="678.0" r="11" fill="#1F3A5F"/>
+<text x="470.0" y="682.2" font-size="12" font-weight="700" fill="#FFFFFF" text-anchor="middle">9</text>
+<rect x="908.5" y="655.0" width="120.0" height="20.0" rx="3" fill="#FFFFFF"/>
+<text x="968.5" y="669.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">inserir payload v1</text>
+<circle cx="470.0" cy="720.0" r="11" fill="#1F3A5F"/>
+<text x="470.0" y="724.2" font-size="12" font-weight="700" fill="#FFFFFF" text-anchor="middle">10</text>
+<rect x="635.7" y="697.0" width="160.6" height="20.0" rx="3" fill="#FFFFFF"/>
+<text x="716.0" y="711.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">gravar chave e resposta</text>
+<rect x="1140" y="740" width="377" height="32" rx="6" fill="#FEF9C3" stroke="#EAB308" stroke-width="1.4"/>
+<text x="1328.5" y="761.0" font-size="13" font-weight="600" fill="#713F12" text-anchor="middle">mesmo commit</text>
+<circle cx="440.0" cy="806.0" r="11" fill="#1F3A5F"/>
+<text x="440.0" y="810.2" font-size="12" font-weight="700" fill="#FFFFFF" text-anchor="middle">11</text>
+<rect x="279.8" y="783.0" width="33.4" height="20.0" rx="3" fill="#FFFFFF"/>
+<text x="296.5" y="797.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">201</text>
+</svg>

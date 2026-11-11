@@ -123,7 +123,7 @@ EventBridge escuta `AWS Secrets Manager Rotation Failed` e os eventos de CloudTr
 
 ## API Gateway
 
-Módulo `modules/api-gateway`. REST API regional, stage `v1`, authorizer Cognito, VPC Link v2 no ALB interno, WAF regional e rotação do header. O POST de lançamento valida corpo e parâmetros. O POST de estorno só valida parâmetros: o corpo é opcional, e `motivo`, quando vem, é limitado no serviço. O detalhe da decisão está no [ADR 0031](../../docs/04-adr/0031-api-gateway-rest-regional.md).
+Módulo `modules/api-gateway`. REST API regional, stage `v1`, authorizer Cognito, VPC Link v2 no ALB interno, WAF regional e rotação do header. O POST de lançamento valida corpo e parâmetros. O POST de estorno só valida parâmetros: o corpo é opcional, e `motivo`, quando vem, é limitado no serviço. O detalhe da decisão está no [ADR 0031](../../documentos-brutos/04-adr/0031-api-gateway-rest-regional.md).
 
 ### Alternar `enable_api_gateway`
 
@@ -171,7 +171,7 @@ O que ainda fica no state: o par lido pelo data source, o custom header da orige
 
 `sizing.read_replica_count` default 0. `sizing.enable_rds_proxy` default false.
 
-A AWS não cria read replica de PostgreSQL quando a senha mestre é gerenciada pelo Secrets Manager ([limitação](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/rds-secrets-manager.html)). A variável `read_replica_count` valida a combinação, e a instância repete a regra numa precondition. O plano falha com mensagem que aponta o Multi-AZ DB Cluster, o Aurora ou a rotação por Lambda. Enquanto `read_replica_count` for 0, `DB_READER_URL` não é definida e a leitura vai ao primário. O gatilho e a recomendação (Multi-AZ DB Cluster) estão no [ADR 0030](../../docs/04-adr/0030-replica-leitura-estrategia-de-dados.md).
+A AWS não cria read replica de PostgreSQL quando a senha mestre é gerenciada pelo Secrets Manager ([limitação](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/rds-secrets-manager.html)). A variável `read_replica_count` valida a combinação, e a instância repete a regra numa precondition. O plano falha com mensagem que aponta o Multi-AZ DB Cluster, o Aurora ou a rotação por Lambda. Enquanto `read_replica_count` for 0, `DB_READER_URL` não é definida e a leitura vai ao primário. O gatilho e a recomendação (Multi-AZ DB Cluster) estão no [ADR 0030](../../documentos-brutos/04-adr/0030-replica-leitura-estrategia-de-dados.md).
 
 RDS Proxy não depende de réplica. Com `enable_rds_proxy = true`, `DB_URL` aponta para o endpoint do proxy (`jdbc:postgresql://…proxy-…`) e a task alcança o security group do proxy, que por sua vez alcança o banco. O proxy também lê o secret gerenciado pelo RDS. O serviço reconhece `.proxy-` e não liga o plugin `failover` contra esse endpoint.
 

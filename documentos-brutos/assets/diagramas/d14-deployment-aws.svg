@@ -1,0 +1,173 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1640 1540" width="1640" height="1540" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-labelledby="t d">
+<title id="t">Deployment na AWS — produção</title>
+<desc id="d">CloudFront global com WAF no PoP GRU; região us-east-1 com Cognito, API Gateway REST e WAF regional; VPC com subnets públicas (NAT), privadas de aplicação (ALB, cluster ECS Fargate, endpoints) e privadas de dados (dois RDS Multi-AZ e ElastiCache); SNS, SQS, DLQ, Secrets Manager, KMS, CloudWatch, X-Ray e ECR.</desc>
+<defs>
+<filter id="sh" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0F172A" flood-opacity="0.08"/></filter>
+<marker id="ah475569" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0.8 L10,5 L0,9.2 Z" fill="#475569"/></marker>
+</defs>
+<rect x="0" y="0" width="1640" height="1540" fill="#FFFFFF"/>
+<g id="group">
+<rect x="300" y="88" width="580" height="160" rx="12" fill="#FFFBF5" stroke="#94A3B8" stroke-width="1.6" stroke-dasharray="6 5"/>
+<text x="314" y="114" font-size="14" font-weight="600" fill="#475569">CloudFront global<tspan dx="8" font-weight="400" fill="#64748B" font-size="12.5">PoP GRU</tspan></text>
+<rect x="40" y="280" width="1560" height="1240" rx="12" fill="#FCFCFD" stroke="#94A3B8" stroke-width="1.6" stroke-dasharray="6 5"/>
+<text x="54" y="306" font-size="15" font-weight="600" fill="#475569">Região us-east-1</text>
+<rect x="70" y="470" width="1160" height="795" rx="12" fill="#F8FAFC" stroke="#94A3B8" stroke-width="1.6" stroke-dasharray="6 5"/>
+<text x="84" y="496" font-size="15" font-weight="600" fill="#475569">VPC</text>
+<rect x="120" y="500" width="360" height="132" rx="12" fill="#FFFFFF" stroke="#94A3B8" stroke-width="1.6" stroke-dasharray="6 5"/>
+<text x="134" y="526" font-size="14" font-weight="600" fill="#475569">Subnets públicas</text>
+<rect x="100" y="660" width="1100" height="390" rx="12" fill="#FFFFFF" stroke="#94A3B8" stroke-width="1.6" stroke-dasharray="6 5"/>
+<text x="114" y="686" font-size="14" font-weight="600" fill="#475569">Subnets privadas de aplicação</text>
+<rect x="370" y="820" width="800" height="212" rx="12" fill="#F3FAF8" stroke="#5EAAA0" stroke-width="1.6" stroke-dasharray="6 5"/>
+<text x="384" y="846" font-size="14" font-weight="600" fill="#0F3D3A">ECS Fargate<tspan dx="8" font-weight="400" fill="#64748B" font-size="12.5">cluster único</tspan></text>
+<rect x="480" y="1078" width="720" height="172" rx="12" fill="#FFFFFF" stroke="#94A3B8" stroke-width="1.6" stroke-dasharray="6 5"/>
+<text x="494" y="1104" font-size="14" font-weight="600" fill="#475569">Subnets privadas de dados</text>
+</g>
+<g id="edge">
+<path d="M214,180 L330,180" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M550,180 L630,180" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M745,226 L745,330" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M860,378 L930,378" fill="none" stroke="#475569" stroke-width="2" stroke-linejoin="round"/>
+<path d="M630,378 L290,378" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" stroke-dasharray="6 5" marker-end="url(#ah475569)"/>
+<path d="M180,200 L180,330" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" stroke-dasharray="6 5" marker-end="url(#ah475569)"/>
+<path d="M745,426 L745,700" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M700,780 L700,870" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M860,740 L1011,740 Q1020,740 1020,749 L1020,870" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M370,930 L330,930" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M400,820 L400,616" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" stroke-dasharray="6 5" marker-end="url(#ah475569)"/>
+<path d="M820,870 L820,814 Q820,805 829,805 L1241,805 Q1250,805 1250,796 L1250,659 Q1250,650 1259,650 L1270,650" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M1250,805 L1270,805" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M1140,895 L1301,895 Q1310,895 1310,886 L1310,850" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M1270,950 L1140,950" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M1550,650 L1569,650 Q1578,650 1578,659 L1578,966 Q1578,975 1569,975 L1550,975" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M1410,1020 L1410,1080" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M725,970 L725,1110" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M930,970 L930,1110" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M1090,970 L1090,1110" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M660,1234 L660,1296 Q660,1305 669,1305 L1270,1305" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M880,1234 L880,1261 Q880,1270 889,1270 L1270,1270" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M460,1000 L460,1310" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M420,1000 L420,1276 Q420,1285 411,1285 L279,1285 Q270,1285 270,1294 L270,1310" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+</g>
+<g id="node">
+<g transform="translate(180,86) scale(1.0)"><circle cx="0" cy="17" r="15" fill="#1F3A5F"/><path d="M-27,64 C-27,43 -15,36 0,36 C15,36 27,43 27,64 Z" fill="#1F3A5F"/></g>
+<text x="180" y="174" font-size="17" font-weight="700" fill="#1F3A5F" text-anchor="middle">Comerciante</text>
+<text x="180" y="192" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">no Brasil</text>
+<rect x="330" y="134" width="220" height="92" rx="10" fill="#FFF4E6" stroke="#EA7A12" stroke-width="2" filter="url(#sh)"/>
+<g transform="translate(440,161.2) scale(1.0)" fill="none" stroke="#EA7A12" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M0,-12 L10,-8 V-1 C10,6 5.5,10.5 0,12.5 C-5.5,10.5 -10,6 -10,-1 V-8 Z"/><path d="M-4.5,0.5 L-1,4 L5,-3"/></g>
+<text x="440" y="191.4" font-size="16" font-weight="600" fill="#9A4A06" text-anchor="middle">AWS WAF</text>
+<text x="440" y="209.5" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[escopo CLOUDFRONT]</text>
+<rect x="630" y="134" width="230" height="92" rx="10" fill="#FFF4E6" stroke="#EA7A12" stroke-width="2" filter="url(#sh)"/>
+<g transform="translate(745,160) scale(1.0)" fill="none" stroke="#EA7A12" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M-9,8 H9 A6,6 0 0 0 9.5,-3.8 A8.5,8.5 0 0 0 -6.5,-5.5 A6.8,6.8 0 0 0 -9,8 Z"/></g>
+<text x="745" y="190.1" font-size="16" font-weight="600" fill="#9A4A06" text-anchor="middle">CloudFront</text>
+<text x="745" y="210.7" font-size="13" font-weight="400" fill="#334155" text-anchor="middle">TLS 1.2+, cache desligado em /api</text>
+<rect x="70" y="330" width="220" height="96" rx="10" fill="#EEF2F7" stroke="#1F3A5F" stroke-width="2" filter="url(#sh)"/>
+<g transform="translate(180,368) scale(1.0)" fill="none" stroke="#1F3A5F" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M0,-12.5 L10.5,-8 V-1 C10.5,6.5 5.5,11 0,13 C-5.5,11 -10.5,6.5 -10.5,-1 V-8 Z"/><rect x="-4.5" y="-1" width="9" height="7" rx="1.5"/><path d="M-2.6,-1 V-3.6 A2.6,2.6 0 0 1 2.6,-3.6 V-1"/></g>
+<text x="180" y="398.1" font-size="16" font-weight="600" fill="#1F3A5F" text-anchor="middle">Cognito User Pool</text>
+<rect x="630" y="330" width="230" height="96" rx="10" fill="#FFF4E6" stroke="#EA7A12" stroke-width="2" filter="url(#sh)"/>
+<g transform="translate(745,359.2) scale(1.0)" fill="none" stroke="#EA7A12" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="-12" y="-9" width="24" height="18" rx="3"/><path d="M-4,-3.5 L-8,0 L-4,3.5"/><path d="M4,-3.5 L8,0 L4,3.5"/><path d="M1.5,-5 L-1.5,5"/></g>
+<text x="745" y="389.4" font-size="16" font-weight="600" fill="#9A4A06" text-anchor="middle">API Gateway</text>
+<text x="745" y="407.5" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[REST regional]</text>
+<rect x="930" y="330" width="220" height="96" rx="10" fill="#FFF4E6" stroke="#EA7A12" stroke-width="2" filter="url(#sh)"/>
+<g transform="translate(1040,358) scale(1.0)" fill="none" stroke="#EA7A12" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M0,-12 L10,-8 V-1 C10,6 5.5,10.5 0,12.5 C-5.5,10.5 -10,6 -10,-1 V-8 Z"/><path d="M-4.5,0.5 L-1,4 L5,-3"/></g>
+<text x="1040" y="388.1" font-size="16" font-weight="600" fill="#9A4A06" text-anchor="middle">WAF regional</text>
+<text x="1040" y="408.7" font-size="13" font-weight="400" fill="#334155" text-anchor="middle">no stage</text>
+<rect x="150" y="540" width="300" height="76" rx="10" fill="#FFF4E6" stroke="#EA7A12" stroke-width="2" filter="url(#sh)"/>
+<g transform="translate(240.9,570.2) scale(0.85)" fill="none" stroke="#EA7A12" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle r="11"/><path d="M-6,-2.5 H5 L2,-5.5 M6,2.5 H-5 L-2,5.5"/></g>
+<text x="314" y="573.1" font-size="16" font-weight="600" fill="#9A4A06" text-anchor="middle">NAT Gateway</text>
+<text x="300" y="593.7" font-size="13" font-weight="400" fill="#334155" text-anchor="middle">1 por AZ em prod</text>
+<rect x="630" y="700" width="230" height="80" rx="10" fill="#FFF4E6" stroke="#EA7A12" stroke-width="2" filter="url(#sh)"/>
+<g transform="translate(693.6,732.2) scale(0.85)" fill="none" stroke="#EA7A12" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="0" cy="-7" r="4.5"/><path d="M0,-2.5 V3 M0,3 L-9,8 M0,3 L9,8 M0,3 V8"/><circle cx="-9" cy="10" r="2.3"/><circle cx="0" cy="10" r="2.3"/><circle cx="9" cy="10" r="2.3"/></g>
+<text x="759" y="735.1" font-size="16" font-weight="600" fill="#9A4A06" text-anchor="middle">ALB interno</text>
+<text x="745" y="755.7" font-size="13" font-weight="400" fill="#334155" text-anchor="middle">sem IP público</text>
+<rect x="125" y="860" width="205" height="140" rx="10" fill="#FFF4E6" stroke="#EA7A12" stroke-width="2" filter="url(#sh)"/>
+<g transform="translate(227.5,885.2) scale(1.0)" fill="none" stroke="#EA7A12" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M-11,0 H-5 M5,0 H11"/><rect x="-5" y="-6" width="10" height="12" rx="2"/><path d="M-2,-9 V-6 M2,-9 V-6"/></g>
+<text x="227.5" y="915.4" font-size="16" font-weight="600" fill="#9A4A06" text-anchor="middle">Endpoints</text>
+<text x="227.5" y="933.5" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[VPC endpoints]</text>
+<text x="227.5" y="953.4" font-size="13" font-weight="400" fill="#334155" text-anchor="middle">ECR, Logs, SQS, SNS,</text>
+<text x="227.5" y="969.4" font-size="13" font-weight="400" fill="#334155" text-anchor="middle">Secrets, STS, KMS,</text>
+<text x="227.5" y="985.4" font-size="13" font-weight="400" fill="#334155" text-anchor="middle">X-Ray</text>
+<rect x="395" y="870" width="170" height="130" rx="10" fill="#E6F4F1" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<g transform="translate(480,915) scale(1.0)" fill="none" stroke="#0F766E" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="-8" cy="-6" r="3"/><circle cx="8" cy="-6" r="3"/><circle cx="0" cy="7" r="3"/><path d="M-5.5,-4.5 L-1.8,4.6 M5.5,-4.5 L1.8,4.6 M-5,-6 H5"/></g>
+<text x="480" y="945.1" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">sidecar ADOT</text>
+<text x="480" y="965.7" font-size="13" font-weight="400" fill="#334155" text-anchor="middle">em cada task</text>
+<rect x="610" y="870" width="240" height="100" rx="10" fill="#E6F4F1" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<g transform="translate(730,900) scale(1.0)" fill="none" stroke="#0F766E" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle r="8.5"/><circle r="3.5"/><line x1="8.5" y1="0" x2="12" y2="0" stroke-width="3.6"/><line x1="6" y1="6" x2="8.5" y2="8.5" stroke-width="3.6"/><line x1="0" y1="8.5" x2="0" y2="12" stroke-width="3.6"/><line x1="-6" y1="6" x2="-8.5" y2="8.5" stroke-width="3.6"/><line x1="-8.5" y1="0" x2="-12" y2="0" stroke-width="3.6"/><line x1="-6" y1="-6" x2="-8.5" y2="-8.5" stroke-width="3.6"/><line x1="-0" y1="-8.5" x2="-0" y2="-12" stroke-width="3.6"/><line x1="6" y1="-6" x2="8.5" y2="-8.5" stroke-width="3.6"/></g>
+<text x="730" y="930.1" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">tasks lancamentos</text>
+<text x="730" y="950.7" font-size="13" font-weight="400" fill="#334155" text-anchor="middle">mínimo 2</text>
+<rect x="900" y="870" width="240" height="100" rx="10" fill="#E6F4F1" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<g transform="translate(1020,900) scale(1.0)" fill="none" stroke="#0F766E" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle r="8.5"/><circle r="3.5"/><line x1="8.5" y1="0" x2="12" y2="0" stroke-width="3.6"/><line x1="6" y1="6" x2="8.5" y2="8.5" stroke-width="3.6"/><line x1="0" y1="8.5" x2="0" y2="12" stroke-width="3.6"/><line x1="-6" y1="6" x2="-8.5" y2="8.5" stroke-width="3.6"/><line x1="-8.5" y1="0" x2="-12" y2="0" stroke-width="3.6"/><line x1="-6" y1="-6" x2="-8.5" y2="-8.5" stroke-width="3.6"/><line x1="-0" y1="-8.5" x2="-0" y2="-12" stroke-width="3.6"/><line x1="6" y1="-6" x2="8.5" y2="-8.5" stroke-width="3.6"/></g>
+<text x="1020" y="930.1" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">tasks consolidado</text>
+<text x="1020" y="950.7" font-size="13" font-weight="400" fill="#334155" text-anchor="middle">mínimo 2</text>
+<path d="M560,1121 A100,11 0 0 0 760,1121 V1223 A100,11 0 0 1 560,1223 Z" fill="#DBEAFE" stroke="#2563EB" stroke-width="2" filter="url(#sh)"/>
+<ellipse cx="660" cy="1121" rx="100" ry="11" fill="#FFFFFF" fill-opacity="0.55" stroke="#2563EB" stroke-width="2"/>
+<text x="660" y="1163.5" font-size="15" font-weight="600" fill="#1E3A8A" text-anchor="middle">RDS lançamentos</text>
+<text x="660" y="1181.5" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[PostgreSQL]</text>
+<text x="660" y="1201.4" font-size="13" font-weight="400" fill="#334155" text-anchor="middle">Multi-AZ</text>
+<path d="M780,1121 A100,11 0 0 0 980,1121 V1223 A100,11 0 0 1 780,1223 Z" fill="#DBEAFE" stroke="#2563EB" stroke-width="2" filter="url(#sh)"/>
+<ellipse cx="880" cy="1121" rx="100" ry="11" fill="#FFFFFF" fill-opacity="0.55" stroke="#2563EB" stroke-width="2"/>
+<text x="880" y="1163.5" font-size="15" font-weight="600" fill="#1E3A8A" text-anchor="middle">RDS consolidado</text>
+<text x="880" y="1181.5" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[PostgreSQL]</text>
+<text x="880" y="1201.4" font-size="13" font-weight="400" fill="#334155" text-anchor="middle">Multi-AZ</text>
+<path d="M1000,1121 A95,11 0 0 0 1190,1121 V1223 A95,11 0 0 1 1000,1223 Z" fill="#FEE2E2" stroke="#DC2626" stroke-width="2" filter="url(#sh)"/>
+<ellipse cx="1095" cy="1121" rx="95" ry="11" fill="#FFFFFF" fill-opacity="0.55" stroke="#DC2626" stroke-width="2"/>
+<text x="1095" y="1172.3" font-size="15" font-weight="600" fill="#7F1D1D" text-anchor="middle">ElastiCache Valkey</text>
+<text x="1095" y="1192.7" font-size="13" font-weight="400" fill="#334155" text-anchor="middle">primary e réplica</text>
+<rect x="1270" y="600" width="280" height="100" rx="10" fill="#F3E8FF" stroke="#7C3AED" stroke-width="2" filter="url(#sh)"/>
+<g transform="translate(1410,631.2) scale(1.0)" fill="none" stroke="#7C3AED" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="-12" y="-8.5" width="24" height="17" rx="2.5"/><path d="M-11,-7 L0,1.5 L11,-7"/></g>
+<text x="1410" y="661.4" font-size="16" font-weight="600" fill="#4C1D95" text-anchor="middle">SNS</text>
+<text x="1410" y="679.5" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[fluxo-caixa-prod-lancamentos-events]</text>
+<rect x="1270" y="760" width="280" height="90" rx="10" fill="#F8FAFC" stroke="#64748B" stroke-width="2" filter="url(#sh)"/>
+<g transform="translate(1410,785) scale(1.0)" fill="none" stroke="#64748B" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="-5" cy="0" r="5.5"/><path d="M0.5,0 H12 M8,0 V4 M11,0 V3"/></g>
+<text x="1410" y="815.1" font-size="16" font-weight="600" fill="#334155" text-anchor="middle">Secrets Manager</text>
+<text x="1410" y="835.7" font-size="13" font-weight="400" fill="#334155" text-anchor="middle">rotação 30 dias</text>
+<rect x="1270" y="930" width="280" height="90" rx="10" fill="#F3E8FF" stroke="#7C3AED" stroke-width="2" filter="url(#sh)"/>
+<g transform="translate(1410,955) scale(1.0)" fill="none" stroke="#7C3AED" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M-12,-7 H12 M-12,0 H12 M-12,7 H12"/></g>
+<text x="1410" y="985.1" font-size="16" font-weight="600" fill="#4C1D95" text-anchor="middle">SQS</text>
+<text x="1410" y="1005.7" font-size="13" font-weight="400" fill="#334155" text-anchor="middle">fila do consolidado</text>
+<rect x="1270" y="1080" width="280" height="80" rx="10" fill="#FEE2E2" stroke="#DC2626" stroke-width="2" filter="url(#sh)"/>
+<g transform="translate(1410,1110) scale(1.0)" fill="none" stroke="#DC2626" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M-12,-7 H12 M-12,0 H12 M-12,7 H12"/></g>
+<text x="1410" y="1140.1" font-size="16" font-weight="600" fill="#7F1D1D" text-anchor="middle">SQS DLQ</text>
+<rect x="1270" y="1240" width="280" height="90" rx="10" fill="#F8FAFC" stroke="#64748B" stroke-width="2" filter="url(#sh)"/>
+<g transform="translate(1410,1265) scale(1.0)" fill="none" stroke="#64748B" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="-5" cy="0" r="5.5"/><path d="M0.5,0 H12 M8,0 V4 M11,0 V3"/></g>
+<text x="1410" y="1295.1" font-size="16" font-weight="600" fill="#334155" text-anchor="middle">KMS</text>
+<text x="1410" y="1315.7" font-size="13" font-weight="400" fill="#334155" text-anchor="middle">rotação anual</text>
+<rect x="1270" y="1390" width="280" height="80" rx="10" fill="#F8FAFC" stroke="#64748B" stroke-width="2" filter="url(#sh)"/>
+<g transform="translate(1410,1420) scale(1.0)" fill="none" stroke="#64748B" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M0,-11 L10,-6 V6 L0,11 L-10,6 V-6 Z M-10,-6 L0,-1 L10,-6 M0,-1 V11"/></g>
+<text x="1410" y="1450.1" font-size="16" font-weight="600" fill="#334155" text-anchor="middle">ECR</text>
+<rect x="160" y="1310" width="220" height="90" rx="10" fill="#F8FAFC" stroke="#64748B" stroke-width="2" filter="url(#sh)"/>
+<g transform="translate(270,1335) scale(1.0)" fill="none" stroke="#64748B" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M-11,10 H11 M-11,10 V-10"/><path d="M-7,5 L-2,-1 L2,2 L9,-7"/></g>
+<text x="270" y="1365.1" font-size="16" font-weight="600" fill="#334155" text-anchor="middle">CloudWatch</text>
+<text x="270" y="1385.7" font-size="13" font-weight="400" fill="#334155" text-anchor="middle">Logs e alarmes</text>
+<rect x="400" y="1310" width="200" height="90" rx="10" fill="#F8FAFC" stroke="#64748B" stroke-width="2" filter="url(#sh)"/>
+<g transform="translate(500,1345) scale(1.0)" fill="none" stroke="#64748B" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="-8" cy="-6" r="3"/><circle cx="8" cy="-6" r="3"/><circle cx="0" cy="7" r="3"/><path d="M-5.5,-4.5 L-1.8,4.6 M5.5,-4.5 L1.8,4.6 M-5,-6 H5"/></g>
+<text x="500" y="1375.1" font-size="16" font-weight="600" fill="#334155" text-anchor="middle">X-Ray</text>
+</g>
+<g id="label">
+<text x="258" y="172" font-size="13" font-weight="500" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">443</text>
+<text x="759" y="266" font-size="13" font-weight="500" fill="#334155" text-anchor="start" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">HTTPS + X-Origin-Verify</text>
+<text x="759" y="560" font-size="13" font-weight="500" fill="#334155" text-anchor="start" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">VPC Link v2</text>
+</g>
+<g id="top">
+<text x="40" y="58" font-size="30" font-weight="700" fill="#1F3A5F" text-anchor="start">Deployment na AWS — produção</text>
+<g transform="translate(1209,100) scale(0.85)"><circle cx="0" cy="-5" r="5" fill="#1F3A5F"/><path d="M-9,10 C-9,2.5 -5,0.5 0,0.5 C5,0.5 9,2.5 9,10 Z" fill="#1F3A5F"/></g>
+<text x="1228" y="105" font-size="13" font-weight="500" fill="#334155" text-anchor="start">Pessoa</text>
+<rect x="1400" y="92" width="18" height="16" rx="4" fill="#E6F4F1" stroke="#0F766E" stroke-width="1.8"/>
+<text x="1428" y="105" font-size="13" font-weight="500" fill="#334155" text-anchor="start">Task ECS</text>
+<rect x="1200" y="118" width="18" height="16" rx="4" fill="#FFF4E6" stroke="#EA7A12" stroke-width="1.8"/>
+<text x="1228" y="131" font-size="13" font-weight="500" fill="#334155" text-anchor="start">Borda e rede AWS</text>
+<rect x="1400" y="118" width="18" height="16" rx="4" fill="#F3E8FF" stroke="#7C3AED" stroke-width="1.8"/>
+<text x="1428" y="131" font-size="13" font-weight="500" fill="#334155" text-anchor="start">Mensageria</text>
+<path d="M1200,147 A9,3 0 0 0 1218,147 V157 A9,3 0 0 1 1200,157 Z" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.6"/><ellipse cx="1209" cy="147" rx="9" ry="3" fill="#FFFFFF" stroke="#2563EB" stroke-width="1.6"/>
+<text x="1228" y="157" font-size="13" font-weight="500" fill="#334155" text-anchor="start">Banco de dados</text>
+<path d="M1400,147 A9,3 0 0 0 1418,147 V157 A9,3 0 0 1 1400,157 Z" fill="#FEE2E2" stroke="#DC2626" stroke-width="1.6"/><ellipse cx="1409" cy="147" rx="9" ry="3" fill="#FFFFFF" stroke="#DC2626" stroke-width="1.6"/>
+<text x="1428" y="157" font-size="13" font-weight="500" fill="#334155" text-anchor="start">Cache e DLQ</text>
+<rect x="1200" y="170" width="18" height="16" rx="4" fill="#EEF2F7" stroke="#1F3A5F" stroke-width="1.8"/>
+<text x="1228" y="183" font-size="13" font-weight="500" fill="#334155" text-anchor="start">Identidade</text>
+<rect x="1400" y="170" width="18" height="16" rx="4" fill="#F8FAFC" stroke="#64748B" stroke-width="1.8"/>
+<text x="1428" y="183" font-size="13" font-weight="500" fill="#334155" text-anchor="start">Segurança e observabilidade</text>
+<path d="M1200,204 H1230" stroke="#475569" stroke-width="1.6" marker-end="url(#ah475569)"/>
+<text x="1240" y="209" font-size="13" font-weight="500" fill="#334155" text-anchor="start">Fluxo</text>
+<path d="M1400,204 H1430" stroke="#475569" stroke-width="1.6" stroke-dasharray="6 5" marker-end="url(#ah475569)"/>
+<text x="1440" y="209" font-size="13" font-weight="500" fill="#334155" text-anchor="start">Indireto (token, egress)</text>
+</g>
+</svg>

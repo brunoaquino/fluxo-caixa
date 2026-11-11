@@ -4,41 +4,17 @@ Sistema para um comerciante registrar créditos e débitos e consultar o saldo d
 
 O requisito que organiza a arquitetura é este: o controle de lançamentos permanece disponível se o consolidado diário cair; em pico, o consolidado atende **50 requisições por segundo** com **no máximo 5% de perda** (meta interna: 1%).
 
+## Documentos entregáveis (PDF)
+
+A documentação final do desafio está em PDF, diagramada e com sumário, na pasta [`documentos-entregaveis-desafio/`](documentos-entregaveis-desafio/README.md). Para ler tudo de uma vez, abra a [documentação completa](documentos-entregaveis-desafio/fluxo-caixa-documentacao-completa.pdf). Os documentos também estão separados por tema (requisitos, DDD, arquitetura e C4, ADRs, segurança, observabilidade, custos, transição, testes, entre outros).
+
+A pasta [`documentos-brutos/`](documentos-brutos/README.md) contém os **documentos brutos**: as fontes em Markdown a partir das quais os PDFs são gerados (`make pdf`). Elas ficam versionadas junto com o código e prevalecem se houver divergência.
+
 ## Como o requisito é atendido
 
-O `lancamentos-service` não chama o `consolidado-service`. O POST grava o lançamento e o evento na mesma transação (tabela `outbox_eventos`) e responde. Um relay publica no tópico cujo ARN vem de `LANCAMENTOS_TOPIC_ARN`. O consolidado consome a fila em `CONSOLIDADO_QUEUE_URL` (retenção de 14 dias, DLQ após 5 tentativas), aplica a soma uma única vez por `eventId` e serve a leitura por uma projeção em Postgres mais cache. No laboratório os nomes são `fluxo-caixa-lancamentos-events` e `consolidado-lancamentos-queue`. Na AWS o nome leva o prefixo do ambiente (`fluxo-caixa-dev-` ou `fluxo-caixa-prod-`); o serviço não tem nome de fila fixo no código. A conta de capacidade (Little: 2,8 requisições em voo no pico, duas tasks, cerca de 17% de utilização, 0,16 conexão de banco ativa) está em [docs/01-contexto-e-requisitos.md](docs/01-contexto-e-requisitos.md#analise-do-rnf-critico).
+O `lancamentos-service` não chama o `consolidado-service`. O POST grava o lançamento e o evento na mesma transação (tabela `outbox_eventos`) e responde. Um relay publica no tópico cujo ARN vem de `LANCAMENTOS_TOPIC_ARN`. O consolidado consome a fila em `CONSOLIDADO_QUEUE_URL` (retenção de 14 dias, DLQ após 5 tentativas), aplica a soma uma única vez por `eventId` e serve a leitura por uma projeção em Postgres mais cache. No laboratório os nomes são `fluxo-caixa-lancamentos-events` e `consolidado-lancamentos-queue`. Na AWS o nome leva o prefixo do ambiente (`fluxo-caixa-dev-` ou `fluxo-caixa-prod-`); o serviço não tem nome de fila fixo no código. A conta de capacidade (Little: 2,8 requisições em voo no pico, duas tasks, cerca de 17% de utilização, 0,16 conexão de banco ativa) está em [documentos-brutos/01-contexto-e-requisitos.md](documentos-brutos/01-contexto-e-requisitos.md#analise-do-rnf-critico).
 
-```mermaid
-C4Container
-title Fluxo de Caixa
-Person(comerciante, "Comerciante", "Registra lancamentos e consulta o saldo")
-System_Boundary(fc, "Fluxo de Caixa") {
-  Container(cf, "CloudFront", "WAF CLOUDFRONT", "Entrada publica. Cache desligado em /api")
-  Container(apigw, "API Gateway", "REST regional", "Authorizer, cota e validacao")
-  Container(alb, "ALB interno", "HTTP", "Sem IP publico")
-  Container(lanc, "lancamentos-service", "Java 25 / Spring Boot 4.0", "Porta 8081. Fonte da verdade")
-  ContainerDb(dbl, "Postgres lancamentos", "PostgreSQL 17", "Lancamento idempotencia e outbox")
-  ContainerQueue(sns, "SNS", "fluxo-caixa-lancamentos-events", "Evento LancamentoRegistrado v1")
-  ContainerQueue(sqs, "SQS", "consolidado-lancamentos-queue", "Retencao 14 dias e DLQ")
-  Container(cons, "consolidado-service", "Java 25 / Spring Boot 4.0", "Porta 8082. Saldo diario")
-  ContainerDb(dbc, "Postgres consolidado", "PostgreSQL 17", "Projecao do saldo")
-  ContainerDb(redis, "Cache", "Redis 7 / Valkey", "So no consolidado")
-}
-System_Ext(idp, "Cognito ou Keycloak", "JWT OIDC")
-Rel(comerciante, cf, "HTTPS /api/v1", "TLS")
-Rel(cf, apigw, "Origem HTTPS", "X-Origin-Verify")
-Rel(apigw, alb, "VPC Link v2", "HTTP")
-Rel(alb, lanc, "POST e GET /api/v1/lancamentos", "HTTP")
-Rel(alb, cons, "GET /api/v1/consolidados", "HTTP")
-Rel(lanc, idp, "Valida JWT de novo", "JWKS")
-Rel(cons, idp, "Valida JWT de novo", "JWKS")
-Rel(lanc, dbl, "Grava fato e outbox", "JDBC")
-Rel(lanc, sns, "Publica depois do commit", "AWS SDK v2")
-Rel(sns, sqs, "Entrega raw", "assinatura")
-Rel(sqs, cons, "Consome", "long polling")
-Rel(cons, dbc, "Atualiza a projecao", "JDBC")
-Rel(cons, redis, "Cache-aside", "Redis")
-```
+![Containers do Fluxo de Caixa: o comerciante passa por CloudFront com WAF, API Gateway REST regional e ALB interno até o lancamentos-service e o consolidado-service; o lancamentos-service grava fato e outbox no Postgres de lançamentos e publica no SNS, que entrega na SQS consumida pelo consolidado-service, que atualiza a projeção no Postgres consolidado e usa cache Valkey/Redis; os dois serviços validam o JWT de novo no Cognito ou Keycloak](documentos-brutos/assets/diagramas/d01-containers.svg)
 
 ## Stack
 
@@ -55,7 +31,7 @@ Rel(cons, redis, "Cache-aside", "Redis")
 | Observabilidade | OpenTelemetry. ADOT, CloudWatch e X-Ray na AWS. Grafana LGTM no local |
 | Infra | Terraform (provider AWS 6.x), ambientes `dev`, `hml` e `prod`, state em S3 |
 
-Licença de runtime: nenhuma paga. A estimativa em `us-east-1`, com os três ambientes ligados o mês inteiro e o API Gateway REST ligado, fica em cerca de **USD 143/mês** (dev), **USD 356/mês** (hml) e **USD 777/mês** (prod). A mesma produção em `sa-east-1`, com o mesmo unitário de request da REST API (não reconsultado naquela região nesta passagem), sairia cerca de **USD 1.467/mês**. Local continua **USD 0**. Detalhe em [docs/08-custos.md](docs/08-custos.md).
+Licença de runtime: nenhuma paga. A estimativa em `us-east-1`, com os três ambientes ligados o mês inteiro e o API Gateway REST ligado, fica em cerca de **USD 143/mês** (dev), **USD 356/mês** (hml) e **USD 777/mês** (prod). A mesma produção em `sa-east-1`, com o mesmo unitário de request da REST API (não reconsultado naquela região nesta passagem), sairia cerca de **USD 1.467/mês**. Local continua **USD 0**. Detalhe em [documentos-brutos/08-custos.md](documentos-brutos/08-custos.md).
 
 ## Estrutura do repositório
 
@@ -63,7 +39,8 @@ Licença de runtime: nenhuma paga. A estimativa em `us-east-1`, com os três amb
 fluxo-caixa/
 ├── README.md
 ├── Makefile
-├── docs/                          # documentação de entrega e blueprint
+├── documentos-entregaveis-desafio/ # entregáveis finais em PDF
+├── documentos-brutos/             # documentos brutos (fontes Markdown) e blueprint
 ├── services/
 │   ├── lancamentos-service/       # porta 8081
 │   └── consolidado-service/       # porta 8082
@@ -73,10 +50,11 @@ fluxo-caixa/
 ├── tests/
 │   ├── load/                      # k6
 │   └── e2e/                       # smoke.sh e resiliencia.sh
+├── tools/pdf/                     # gerador dos PDFs (pandoc + Chrome)
 └── .github/workflows/
 ```
 
-O contrato compartilhado (paths, evento, nomes de fila, variáveis, portas) está em [docs/blueprint-tecnico.md](docs/blueprint-tecnico.md). A narrativa de arquitetura começa em [docs/README.md](docs/README.md).
+O contrato compartilhado (paths, evento, nomes de fila, variáveis, portas) está em [documentos-brutos/blueprint-tecnico.md](documentos-brutos/blueprint-tecnico.md). A narrativa de arquitetura começa em [documentos-brutos/README.md](documentos-brutos/README.md).
 
 ## Pré-requisitos
 
@@ -182,32 +160,35 @@ make load          # k6, opcional
 make tf-validate   # Terraform fmt e validate
 ```
 
-O que cada camada cobre está em [docs/11-testes.md](docs/11-testes.md).
+O que cada camada cobre está em [documentos-brutos/11-testes.md](documentos-brutos/11-testes.md).
 
 ## Deploy na AWS
 
-Produção em `us-east-1`: CloudFront com WAF, API Gateway REST regional com WAF próprio e VPC Link v2 até um ALB interno, VPC em três zonas, ECS Fargate com no mínimo duas tasks por serviço, RDS PostgreSQL separado e Multi-AZ para cada serviço, ElastiCache com réplica, SNS/SQS/DLQ, Cognito, Secrets Manager com rotação e ADOT. Há também `dev` e `hml`, menores. `enable_api_gateway = false` tira o gateway e volta o CloudFront à VPC Origin. O passo a passo de apply, state e variáveis fica em [infra/terraform/README.md](infra/terraform/README.md). A topologia e o DR estão em [docs/03-arquitetura/deployment-aws.md](docs/03-arquitetura/deployment-aws.md). O deploy da aplicação é rolling com circuit breaker e rollback ([ADR 0020](docs/04-adr/0020-estrategia-de-deploy.md)), promovendo a mesma imagem de dev para hml e prod.
+Produção em `us-east-1`: CloudFront com WAF, API Gateway REST regional com WAF próprio e VPC Link v2 até um ALB interno, VPC em três zonas, ECS Fargate com no mínimo duas tasks por serviço, RDS PostgreSQL separado e Multi-AZ para cada serviço, ElastiCache com réplica, SNS/SQS/DLQ, Cognito, Secrets Manager com rotação e ADOT. Há também `dev` e `hml`, menores. `enable_api_gateway = false` tira o gateway e volta o CloudFront à VPC Origin. O passo a passo de apply, state e variáveis fica em [infra/terraform/README.md](infra/terraform/README.md). A topologia e o DR estão em [documentos-brutos/03-arquitetura/deployment-aws.md](documentos-brutos/03-arquitetura/deployment-aws.md). O deploy da aplicação é rolling com circuit breaker e rollback ([ADR 0020](documentos-brutos/04-adr/0020-estrategia-de-deploy.md)), promovendo a mesma imagem de dev para hml e prod.
 
 ## Documentação
 
+Os entregáveis em PDF estão em [`documentos-entregaveis-desafio/`](documentos-entregaveis-desafio/README.md). A tabela abaixo aponta para os documentos brutos em Markdown, em `documentos-brutos/`, que são a fonte desses PDFs.
+
 | Documento | Conteúdo |
 |---|---|
-| [Índice](docs/README.md) | Mapa de toda a entrega |
-| [Blueprint](docs/blueprint-tecnico.md) | Contrato: nomes, portas, evento, SLOs |
-| [Requisitos](docs/01-contexto-e-requisitos.md) | RF, RNF e capacidade |
-| [Domínio](docs/02-dominio-ddd.md) | DDD, context map, evento |
-| [Arquitetura](docs/03-arquitetura/README.md) | C4, fluxos, AWS, Structurizr |
-| [ADRs](docs/04-adr/README.md) | Decisões de 0001 a 0031 |
-| [RNF operacionais](docs/05-requisitos-nao-funcionais.md) | SLO, error budget, k6 |
-| [Segurança](docs/06-seguranca.md) | STRIDE, OWASP API, LGPD, rotação |
-| [Observabilidade](docs/07-observabilidade.md) | Trace ponta a ponta, alarmes, runbooks |
-| [Custos](docs/08-custos.md) | USD e BRL, dev, hml e prod |
-| [Transição](docs/09-arquitetura-de-transicao.md) | Strangler a partir do legado |
-| [Evoluções](docs/10-evolucoes-futuras.md) | O que ficou de fora e por quê |
-| [Testes](docs/11-testes.md) | Pirâmide e comandos |
-| [Desempenho](docs/12-desempenho-e-dados.md) | Índices, réplica, cache, lake |
-| [ECS e EKS](docs/13-ecs-vs-eks.md) | Critério, stack e preço de observar |
-| [CI/CD](docs/14-cicd-e-qualidade.md) | Pipeline e ferramentas |
+| [Entregáveis em PDF](documentos-entregaveis-desafio/README.md) | Versão final diagramada de toda a documentação |
+| [Índice](documentos-brutos/README.md) | Mapa de toda a entrega |
+| [Blueprint](documentos-brutos/blueprint-tecnico.md) | Contrato: nomes, portas, evento, SLOs |
+| [Requisitos](documentos-brutos/01-contexto-e-requisitos.md) | RF, RNF e capacidade |
+| [Domínio](documentos-brutos/02-dominio-ddd.md) | DDD, context map, evento |
+| [Arquitetura](documentos-brutos/03-arquitetura/README.md) | C4, fluxos, AWS, Structurizr |
+| [ADRs](documentos-brutos/04-adr/README.md) | Decisões de 0001 a 0031 |
+| [RNF operacionais](documentos-brutos/05-requisitos-nao-funcionais.md) | SLO, error budget, k6 |
+| [Segurança](documentos-brutos/06-seguranca.md) | STRIDE, OWASP API, LGPD, rotação |
+| [Observabilidade](documentos-brutos/07-observabilidade.md) | Trace ponta a ponta, alarmes, runbooks |
+| [Custos](documentos-brutos/08-custos.md) | USD e BRL, dev, hml e prod |
+| [Transição](documentos-brutos/09-arquitetura-de-transicao.md) | Strangler a partir do legado |
+| [Evoluções](documentos-brutos/10-evolucoes-futuras.md) | O que ficou de fora e por quê |
+| [Testes](documentos-brutos/11-testes.md) | Pirâmide e comandos |
+| [Desempenho](documentos-brutos/12-desempenho-e-dados.md) | Índices, réplica, cache, lake |
+| [ECS e EKS](documentos-brutos/13-ecs-vs-eks.md) | Critério, stack e preço de observar |
+| [CI/CD](documentos-brutos/14-cicd-e-qualidade.md) | Pipeline e ferramentas |
 
 ## Saúde dos processos
 

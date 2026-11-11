@@ -20,3 +20,6 @@ backend.hcl
 infra/terraform/**/.build/
 infra/terraform/modules/**/.terraform.lock.hcl
 infra/terraform/stacks/**/.terraform.lock.hcl
+__pycache__/
+.venv-pdf/
+desafio-arquiteto-solucoes.md

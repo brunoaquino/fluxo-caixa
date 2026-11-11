@@ -4,8 +4,9 @@ ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 COMPOSE := docker compose -f $(ROOT)/infra/local/docker-compose.yml --project-directory $(ROOT)/infra/local
 ENV ?= dev
 TF_ENV := $(ROOT)/infra/terraform/envs/$(ENV)
+PDF_VENV := $(ROOT)/.venv-pdf
 
-.PHONY: help infra-up infra-down up down logs test token smoke resiliencia load tf-fmt tf-validate tf-init tf-plan tf-test
+.PHONY: help infra-up infra-down up down logs test token smoke resiliencia load tf-fmt tf-validate tf-init tf-plan tf-test pdf
 
 help:
 	@printf '%s\n' \
@@ -23,7 +24,8 @@ help:
 		'tf-init        terraform init -backend-config=backend.hcl (ENV=dev|hml|prod)' \
 		'tf-plan        terraform plan do ENV' \
 		'tf-validate    fmt -check e validate em bootstrap, dev, hml e prod' \
-		'tf-test        terraform test dos modulos criticos'
+		'tf-test        terraform test dos modulos criticos' \
+		'pdf            Regera os PDFs de documentos-entregaveis-desafio (pandoc + Chrome)'
 
 infra-up:
 	$(COMPOSE) --profile infra up -d
@@ -80,3 +82,10 @@ tf-test:
 	terraform -chdir=$(ROOT)/infra/terraform/modules/rds-postgres test
 	terraform -chdir=$(ROOT)/infra/terraform/modules/edge test
 	terraform -chdir=$(ROOT)/infra/terraform/modules/api-gateway test
+
+$(PDF_VENV)/bin/python:
+	python3 -m venv $(PDF_VENV)
+	$(PDF_VENV)/bin/pip install -q -r $(ROOT)/tools/pdf/requirements.txt
+
+pdf: $(PDF_VENV)/bin/python
+	$(PDF_VENV)/bin/python $(ROOT)/tools/pdf/build.py

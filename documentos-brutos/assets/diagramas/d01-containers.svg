@@ -1,0 +1,136 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1420" width="1600" height="1420" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-labelledby="t d">
+<title id="t">Fluxo de Caixa — containers</title>
+<desc id="d">Comerciante acessa CloudFront, API Gateway e ALB interno até lancamentos-service e consolidado-service; lançamentos grava no Postgres e publica no SNS; SQS entrega ao consolidado, que grava a projeção e usa cache; os dois serviços validam o JWT no Cognito ou Keycloak.</desc>
+<defs>
+<filter id="sh" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0F172A" flood-opacity="0.08"/></filter>
+<marker id="ah475569" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0.8 L10,5 L0,9.2 Z" fill="#475569"/></marker>
+</defs>
+<rect x="0" y="0" width="1600" height="1420" fill="#FFFFFF"/>
+<g id="group">
+<rect x="200" y="246" width="1340" height="940" rx="12" fill="#F8FAFC" stroke="#94A3B8" stroke-width="1.6" stroke-dasharray="6 5"/>
+<text x="214" y="272" font-size="14" font-weight="600" fill="#475569">Fluxo de Caixa<tspan dx="8" font-weight="400" fill="#64748B" font-size="12.5">[fronteira do sistema]</tspan></text>
+</g>
+<g id="edge">
+<path d="M380,194 L380,290" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M515,355 L695,355" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M965,355 L1145,355" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M1220,420 L1220,491 Q1220,500 1211,500 L389,500 Q380,500 380,509 L380,560" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M1345,420 L1345,560" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M380,690 L380,790" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M515,625 L695,625" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M830,690 L830,790" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M965,855 L1046,855 Q1055,855 1055,846 L1055,649 Q1055,640 1064,640 L1145,640" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M1280,690 L1280,790" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M1415,645 L1461,645 Q1470,645 1470,654 L1470,1077 Q1470,1086 1461,1086 L1415,1086" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah475569)"/>
+<path d="M245,625 L159,625 Q150,625 150,634 L150,1286 Q150,1295 159,1295 L690,1295" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" stroke-dasharray="6 5" marker-end="url(#ah475569)"/>
+<path d="M1415,605 L1501,605 Q1510,605 1510,614 L1510,1286 Q1510,1295 1501,1295 L980,1295" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" stroke-dasharray="6 5" marker-end="url(#ah475569)"/>
+</g>
+<g id="node">
+<g transform="translate(380,78) scale(1.0)"><circle cx="0" cy="17" r="15" fill="#1F3A5F"/><path d="M-27,64 C-27,43 -15,36 0,36 C15,36 27,43 27,64 Z" fill="#1F3A5F"/></g>
+<text x="380" y="166" font-size="17" font-weight="700" fill="#1F3A5F" text-anchor="middle">Comerciante</text>
+<text x="380" y="184" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">Registra lançamentos e consulta o saldo</text>
+<rect x="245" y="290" width="270" height="130" rx="10" fill="#FFF4E6" stroke="#EA7A12" stroke-width="2" filter="url(#sh)"/>
+<g transform="translate(380,326.2) scale(1.0)" fill="none" stroke="#EA7A12" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M-9,8 H9 A6,6 0 0 0 9.5,-3.8 A8.5,8.5 0 0 0 -6.5,-5.5 A6.8,6.8 0 0 0 -9,8 Z"/></g>
+<text x="380" y="356.4" font-size="16" font-weight="600" fill="#9A4A06" text-anchor="middle">CloudFront</text>
+<text x="380" y="374.5" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[WAF CLOUDFRONT]</text>
+<text x="380" y="394.4" font-size="13" font-weight="400" fill="#334155" text-anchor="middle">Entrada pública. Cache desligado em /api</text>
+<rect x="695" y="290" width="270" height="130" rx="10" fill="#FFF4E6" stroke="#EA7A12" stroke-width="2" filter="url(#sh)"/>
+<g transform="translate(830,326.2) scale(1.0)" fill="none" stroke="#EA7A12" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="-12" y="-9" width="24" height="18" rx="3"/><path d="M-4,-3.5 L-8,0 L-4,3.5"/><path d="M4,-3.5 L8,0 L4,3.5"/><path d="M1.5,-5 L-1.5,5"/></g>
+<text x="830" y="356.4" font-size="16" font-weight="600" fill="#9A4A06" text-anchor="middle">API Gateway</text>
+<text x="830" y="374.5" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[REST regional]</text>
+<text x="830" y="394.4" font-size="13" font-weight="400" fill="#334155" text-anchor="middle">Authorizer, cota e validação</text>
+<rect x="1145" y="290" width="270" height="130" rx="10" fill="#FFF4E6" stroke="#EA7A12" stroke-width="2" filter="url(#sh)"/>
+<g transform="translate(1280,326.2) scale(1.0)" fill="none" stroke="#EA7A12" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="0" cy="-7" r="4.5"/><path d="M0,-2.5 V3 M0,3 L-9,8 M0,3 L9,8 M0,3 V8"/><circle cx="-9" cy="10" r="2.3"/><circle cx="0" cy="10" r="2.3"/><circle cx="9" cy="10" r="2.3"/></g>
+<text x="1280" y="356.4" font-size="16" font-weight="600" fill="#9A4A06" text-anchor="middle">ALB interno</text>
+<text x="1280" y="374.5" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[HTTP]</text>
+<text x="1280" y="394.4" font-size="13" font-weight="400" fill="#334155" text-anchor="middle">Sem IP público</text>
+<rect x="245" y="560" width="270" height="130" rx="10" fill="#E6F4F1" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<g transform="translate(380,596.2) scale(1.0)" fill="none" stroke="#0F766E" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle r="8.5"/><circle r="3.5"/><line x1="8.5" y1="0" x2="12" y2="0" stroke-width="3.6"/><line x1="6" y1="6" x2="8.5" y2="8.5" stroke-width="3.6"/><line x1="0" y1="8.5" x2="0" y2="12" stroke-width="3.6"/><line x1="-6" y1="6" x2="-8.5" y2="8.5" stroke-width="3.6"/><line x1="-8.5" y1="0" x2="-12" y2="0" stroke-width="3.6"/><line x1="-6" y1="-6" x2="-8.5" y2="-8.5" stroke-width="3.6"/><line x1="-0" y1="-8.5" x2="-0" y2="-12" stroke-width="3.6"/><line x1="6" y1="-6" x2="8.5" y2="-8.5" stroke-width="3.6"/></g>
+<text x="380" y="626.4" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">lancamentos-service</text>
+<text x="380" y="644.5" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[Java 25 / Spring Boot 4.0]</text>
+<text x="380" y="664.4" font-size="13" font-weight="400" fill="#334155" text-anchor="middle">Porta 8081. Fonte da verdade</text>
+<rect x="695" y="560" width="270" height="130" rx="10" fill="#F3E8FF" stroke="#7C3AED" stroke-width="2" filter="url(#sh)"/>
+<g transform="translate(830,596.2) scale(1.0)" fill="none" stroke="#7C3AED" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="-12" y="-8.5" width="24" height="17" rx="2.5"/><path d="M-11,-7 L0,1.5 L11,-7"/></g>
+<text x="830" y="626.4" font-size="16" font-weight="600" fill="#4C1D95" text-anchor="middle">SNS</text>
+<text x="830" y="644.5" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[fluxo-caixa-lancamentos-events]</text>
+<text x="830" y="664.4" font-size="13" font-weight="400" fill="#334155" text-anchor="middle">Evento LancamentoRegistrado v1</text>
+<rect x="1145" y="560" width="270" height="130" rx="10" fill="#E6F4F1" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<g transform="translate(1280,596.2) scale(1.0)" fill="none" stroke="#0F766E" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle r="8.5"/><circle r="3.5"/><line x1="8.5" y1="0" x2="12" y2="0" stroke-width="3.6"/><line x1="6" y1="6" x2="8.5" y2="8.5" stroke-width="3.6"/><line x1="0" y1="8.5" x2="0" y2="12" stroke-width="3.6"/><line x1="-6" y1="6" x2="-8.5" y2="8.5" stroke-width="3.6"/><line x1="-8.5" y1="0" x2="-12" y2="0" stroke-width="3.6"/><line x1="-6" y1="-6" x2="-8.5" y2="-8.5" stroke-width="3.6"/><line x1="-0" y1="-8.5" x2="-0" y2="-12" stroke-width="3.6"/><line x1="6" y1="-6" x2="8.5" y2="-8.5" stroke-width="3.6"/></g>
+<text x="1280" y="626.4" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">consolidado-service</text>
+<text x="1280" y="644.5" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[Java 25 / Spring Boot 4.0]</text>
+<text x="1280" y="664.4" font-size="13" font-weight="400" fill="#334155" text-anchor="middle">Porta 8082. Saldo diário</text>
+<path d="M245,801 A135,11 0 0 0 515,801 V909 A135,11 0 0 1 245,909 Z" fill="#DBEAFE" stroke="#2563EB" stroke-width="2" filter="url(#sh)"/>
+<ellipse cx="380" cy="801" rx="135" ry="11" fill="#FFFFFF" fill-opacity="0.55" stroke="#2563EB" stroke-width="2"/>
+<text x="380" y="846.9" font-size="16" font-weight="600" fill="#1E3A8A" text-anchor="middle">Postgres lançamentos</text>
+<text x="380" y="865" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[PostgreSQL 17]</text>
+<text x="380" y="884.9" font-size="13" font-weight="400" fill="#334155" text-anchor="middle">Lançamento, idempotência e outbox</text>
+<rect x="695" y="790" width="270" height="130" rx="10" fill="#F3E8FF" stroke="#7C3AED" stroke-width="2" filter="url(#sh)"/>
+<g transform="translate(830,826.2) scale(1.0)" fill="none" stroke="#7C3AED" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M-12,-7 H12 M-12,0 H12 M-12,7 H12"/></g>
+<text x="830" y="856.4" font-size="16" font-weight="600" fill="#4C1D95" text-anchor="middle">SQS</text>
+<text x="830" y="874.5" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[consolidado-lancamentos-queue]</text>
+<text x="830" y="894.4" font-size="13" font-weight="400" fill="#334155" text-anchor="middle">Retenção 14 dias e DLQ</text>
+<path d="M1145,801 A135,11 0 0 0 1415,801 V909 A135,11 0 0 1 1145,909 Z" fill="#DBEAFE" stroke="#2563EB" stroke-width="2" filter="url(#sh)"/>
+<ellipse cx="1280" cy="801" rx="135" ry="11" fill="#FFFFFF" fill-opacity="0.55" stroke="#2563EB" stroke-width="2"/>
+<text x="1280" y="846.9" font-size="16" font-weight="600" fill="#1E3A8A" text-anchor="middle">Postgres consolidado</text>
+<text x="1280" y="865" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[PostgreSQL 17]</text>
+<text x="1280" y="884.9" font-size="13" font-weight="400" fill="#334155" text-anchor="middle">Projeção do saldo</text>
+<path d="M1145,1031 A135,11 0 0 0 1415,1031 V1129 A135,11 0 0 1 1145,1129 Z" fill="#FEE2E2" stroke="#DC2626" stroke-width="2" filter="url(#sh)"/>
+<ellipse cx="1280" cy="1031" rx="135" ry="11" fill="#FFFFFF" fill-opacity="0.55" stroke="#DC2626" stroke-width="2"/>
+<text x="1280" y="1071.9" font-size="16" font-weight="600" fill="#7F1D1D" text-anchor="middle">Cache</text>
+<text x="1280" y="1090" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[Redis 7 / Valkey]</text>
+<text x="1280" y="1109.9" font-size="13" font-weight="400" fill="#334155" text-anchor="middle">Só no consolidado</text>
+<rect x="690" y="1240" width="290" height="110" rx="10" fill="#EEF2F7" stroke="#1F3A5F" stroke-width="2" filter="url(#sh)"/>
+<g transform="translate(835,1275) scale(1.0)" fill="none" stroke="#1F3A5F" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M0,-12.5 L10.5,-8 V-1 C10.5,6.5 5.5,11 0,13 C-5.5,11 -10.5,6.5 -10.5,-1 V-8 Z"/><rect x="-4.5" y="-1" width="9" height="7" rx="1.5"/><path d="M-2.6,-1 V-3.6 A2.6,2.6 0 0 1 2.6,-3.6 V-1"/></g>
+<text x="835" y="1305.1" font-size="16" font-weight="600" fill="#1F3A5F" text-anchor="middle">Cognito ou Keycloak</text>
+<text x="835" y="1325.7" font-size="13" font-weight="400" fill="#334155" text-anchor="middle">JWT OIDC</text>
+</g>
+<g id="label">
+<text x="394" y="214" font-size="13" font-weight="500" fill="#334155" text-anchor="start" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">HTTPS /api/v1</text>
+<text x="394" y="230" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="start" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">[TLS]</text>
+<text x="605" y="329" font-size="13" font-weight="500" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Origem HTTPS</text>
+<text x="605" y="345" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">[X-Origin-Verify]</text>
+<text x="1055" y="329" font-size="13" font-weight="500" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">VPC Link v2</text>
+<text x="1055" y="345" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">[HTTP]</text>
+<text x="640" y="478" font-size="13" font-weight="500" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">POST e GET /api/v1/lancamentos</text>
+<text x="640" y="494" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">[HTTP]</text>
+<text x="1358" y="482" font-size="13" font-weight="500" fill="#334155" text-anchor="start" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">GET /api/v1/consolidados</text>
+<text x="1358" y="498" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="start" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">[HTTP]</text>
+<text x="394" y="734" font-size="13" font-weight="500" fill="#334155" text-anchor="start" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Grava fato e outbox</text>
+<text x="394" y="750" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="start" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">[JDBC]</text>
+<text x="605" y="597" font-size="13" font-weight="500" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Publica depois do commit</text>
+<text x="605" y="613" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">[AWS SDK v2]</text>
+<text x="844" y="734" font-size="13" font-weight="500" fill="#334155" text-anchor="start" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Entrega raw</text>
+<text x="844" y="750" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="start" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">[assinatura]</text>
+<text x="1043" y="734" font-size="13" font-weight="500" fill="#334155" text-anchor="end" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Consome</text>
+<text x="1043" y="750" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="end" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">[long polling]</text>
+<text x="1294" y="734" font-size="13" font-weight="500" fill="#334155" text-anchor="start" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Atualiza a projeção</text>
+<text x="1294" y="750" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="start" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">[JDBC]</text>
+<text x="1458" y="962" font-size="13" font-weight="500" fill="#334155" text-anchor="end" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Cache-aside</text>
+<text x="1458" y="978" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="end" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">[Redis]</text>
+<text x="415" y="1273" font-size="13" font-weight="500" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Valida JWT de novo</text>
+<text x="415" y="1289" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">[JWKS]</text>
+<text x="1245" y="1273" font-size="13" font-weight="500" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Valida JWT de novo</text>
+<text x="1245" y="1289" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">[JWKS]</text>
+</g>
+<g id="top">
+<text x="40" y="58" font-size="30" font-weight="700" fill="#1F3A5F" text-anchor="start">Fluxo de Caixa — containers</text>
+<g transform="translate(1159,94) scale(0.85)"><circle cx="0" cy="-5" r="5" fill="#1F3A5F"/><path d="M-9,10 C-9,2.5 -5,0.5 0,0.5 C5,0.5 9,2.5 9,10 Z" fill="#1F3A5F"/></g>
+<text x="1178" y="99" font-size="13" font-weight="500" fill="#334155" text-anchor="start">Pessoa</text>
+<rect x="1350" y="86" width="18" height="16" rx="4" fill="#E6F4F1" stroke="#0F766E" stroke-width="1.8"/>
+<text x="1378" y="99" font-size="13" font-weight="500" fill="#334155" text-anchor="start">Serviço da aplicação</text>
+<rect x="1150" y="112" width="18" height="16" rx="4" fill="#FFF4E6" stroke="#EA7A12" stroke-width="1.8"/>
+<text x="1178" y="125" font-size="13" font-weight="500" fill="#334155" text-anchor="start">Borda e rede AWS</text>
+<rect x="1350" y="112" width="18" height="16" rx="4" fill="#F3E8FF" stroke="#7C3AED" stroke-width="1.8"/>
+<text x="1378" y="125" font-size="13" font-weight="500" fill="#334155" text-anchor="start">Mensageria</text>
+<path d="M1150,141 A9,3 0 0 0 1168,141 V151 A9,3 0 0 1 1150,151 Z" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.6"/><ellipse cx="1159" cy="141" rx="9" ry="3" fill="#FFFFFF" stroke="#2563EB" stroke-width="1.6"/>
+<text x="1178" y="151" font-size="13" font-weight="500" fill="#334155" text-anchor="start">Banco de dados</text>
+<path d="M1350,141 A9,3 0 0 0 1368,141 V151 A9,3 0 0 1 1350,151 Z" fill="#FEE2E2" stroke="#DC2626" stroke-width="1.6"/><ellipse cx="1359" cy="141" rx="9" ry="3" fill="#FFFFFF" stroke="#DC2626" stroke-width="1.6"/>
+<text x="1378" y="151" font-size="13" font-weight="500" fill="#334155" text-anchor="start">Cache</text>
+<rect x="1150" y="164" width="18" height="16" rx="4" fill="#EEF2F7" stroke="#1F3A5F" stroke-width="1.8"/>
+<text x="1178" y="177" font-size="13" font-weight="500" fill="#334155" text-anchor="start">Sistema externo</text>
+<path d="M1150,198 H1180" stroke="#475569" stroke-width="1.6" marker-end="url(#ah475569)"/>
+<text x="1190" y="203" font-size="13" font-weight="500" fill="#334155" text-anchor="start">Chamada</text>
+<path d="M1350,198 H1380" stroke="#475569" stroke-width="1.6" stroke-dasharray="6 5" marker-end="url(#ah475569)"/>
+<text x="1390" y="203" font-size="13" font-weight="500" fill="#334155" text-anchor="start">Validação de JWT</text>
+</g>
+</svg>

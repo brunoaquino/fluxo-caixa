@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 854" width="1600" height="854" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+<defs>
+<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#475569"/></marker>
+<marker id="arrErr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#DC2626"/></marker>
+<filter id="sh" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0F172A" flood-opacity="0.08"/></filter>
+</defs>
+<rect width="1600" height="854" fill="#FFFFFF"/>
+<text x="40.0" y="58.0" font-size="30" fill="#1F3A5F" text-anchor="start" font-weight="700">Consolidado fora e a recuperação</text>
+<line x1="160.0" y1="188.0" x2="160.0" y2="820.0" stroke="#CBD5E1" stroke-width="1.6" stroke-dasharray="6 5"/>
+<circle cx="160.0" cy="820.0" r="3.5" fill="#CBD5E1"/>
+<line x1="432.5" y1="188.0" x2="432.5" y2="820.0" stroke="#CBD5E1" stroke-width="1.6" stroke-dasharray="6 5"/>
+<circle cx="432.5" cy="820.0" r="3.5" fill="#CBD5E1"/>
+<line x1="705.0" y1="188.0" x2="705.0" y2="820.0" stroke="#CBD5E1" stroke-width="1.6" stroke-dasharray="6 5"/>
+<circle cx="705.0" cy="820.0" r="3.5" fill="#CBD5E1"/>
+<line x1="977.5" y1="188.0" x2="977.5" y2="820.0" stroke="#CBD5E1" stroke-width="1.6" stroke-dasharray="6 5"/>
+<circle cx="977.5" cy="820.0" r="3.5" fill="#CBD5E1"/>
+<line x1="1250.0" y1="188.0" x2="1250.0" y2="820.0" stroke="#CBD5E1" stroke-width="1.6" stroke-dasharray="6 5"/>
+<circle cx="1250.0" cy="820.0" r="3.5" fill="#CBD5E1"/>
+<rect x="50.0" y="96" width="220.0" height="92" rx="10" fill="#EEF2F7" stroke="#1F3A5F" stroke-width="2" filter="url(#sh)"/>
+<circle cx="160.0" cy="116" r="5.5" fill="#1F3A5F"/><path d="M150.0,133 C150.0,123 170.0,123 170.0,133 Z" fill="#1F3A5F"/>
+<text x="160.0" y="162.0" font-size="16" fill="#1F3A5F" text-anchor="middle" font-weight="600">Comerciante</text>
+<rect x="322.5" y="96" width="220.0" height="92" rx="10" fill="#E6F4F1" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<g stroke="#0F766E" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="421.5" y="111" width="22" height="8.5" rx="2"/><rect x="421.5" y="122.5" width="22" height="8.5" rx="2"/></g><circle cx="426.5" cy="115.25" r="1.4" fill="#0F766E"/><circle cx="426.5" cy="126.75" r="1.4" fill="#0F766E"/>
+<text x="432.5" y="156.0" font-size="16" fill="#0F3D3A" text-anchor="middle" font-weight="600">lancamentos-service</text>
+<text x="432.5" y="175.0" font-size="12.5" fill="#64748B" text-anchor="middle">Java 25 / Spring Boot 4.0</text>
+<rect x="595.0" y="96" width="220.0" height="92" rx="10" fill="#DBEAFE" stroke="#2563EB" stroke-width="2" filter="url(#sh)"/>
+<g stroke="#2563EB" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="705.0" cy="114" rx="10" ry="3.5"/><path d="M695.0,114 L695.0,128 A10,3.5 0 0 0 715.0,128 L715.0,114"/><path d="M695.0,121 A10,3.5 0 0 0 715.0,121"/></g>
+<text x="705.0" y="156.0" font-size="16" fill="#1E3A8A" text-anchor="middle" font-weight="600">Postgres lançamentos</text>
+<text x="705.0" y="175.0" font-size="12.5" fill="#64748B" text-anchor="middle">PostgreSQL 17</text>
+<rect x="865.9" y="96" width="223.1" height="92" rx="10" fill="#F3E8FF" stroke="#7C3AED" stroke-width="2" filter="url(#sh)"/>
+<g stroke="#7C3AED" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="966.5" y="112" width="22" height="18" rx="2.5"/><line x1="971.5" y1="117" x2="983.5" y2="117"/><line x1="971.5" y1="121" x2="983.5" y2="121"/><line x1="971.5" y1="125" x2="983.5" y2="125"/></g>
+<text x="977.5" y="156.0" font-size="16" fill="#4C1D95" text-anchor="middle" font-weight="600">SQS</text>
+<text x="977.5" y="175.0" font-size="12.5" fill="#64748B" text-anchor="middle">consolidado-lancamentos-queue</text>
+<rect x="1140.0" y="96" width="220.0" height="92" rx="10" fill="#E6F4F1" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<g stroke="#0F766E" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="1239.0" y="111" width="22" height="8.5" rx="2"/><rect x="1239.0" y="122.5" width="22" height="8.5" rx="2"/></g><circle cx="1244.0" cy="115.25" r="1.4" fill="#0F766E"/><circle cx="1244.0" cy="126.75" r="1.4" fill="#0F766E"/>
+<text x="1250.0" y="156.0" font-size="16" fill="#0F3D3A" text-anchor="middle" font-weight="600">consolidado-service</text>
+<text x="1250.0" y="175.0" font-size="12.5" fill="#64748B" text-anchor="middle">Java 25 / Spring Boot 4.0</text>
+<line x1="171.0" y1="241.0" x2="430.5" y2="241.0" stroke="#475569" stroke-width="1.6" marker-end="url(#arr)"/>
+<line x1="443.5" y1="292.0" x2="703.0" y2="292.0" stroke="#475569" stroke-width="1.6" marker-end="url(#arr)"/>
+<line x1="421.5" y1="343.0" x2="162.0" y2="343.0" stroke="#475569" stroke-width="1.6" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+<rect x="887.5" y="377.0" width="452.5" height="35" rx="6" fill="#FEF9C3" stroke="#EAB308" stroke-width="1.4"/>
+<text x="1113.8" y="399.0" font-size="13" fill="#713F12" text-anchor="middle">consolidado-service sem task saudável</text>
+<line x1="716.0" y1="451.0" x2="975.5" y2="451.0" stroke="#475569" stroke-width="1.6" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+<rect x="857.5" y="485.0" width="240.0" height="35" rx="6" fill="#FEF9C3" stroke="#EAB308" stroke-width="1.4"/>
+<text x="977.5" y="507.0" font-size="13" fill="#713F12" text-anchor="middle">mensagens retidas até 14 dias</text>
+<line x1="171.0" y1="559.0" x2="430.5" y2="559.0" stroke="#475569" stroke-width="1.6" marker-end="url(#arr)"/>
+<line x1="421.5" y1="610.0" x2="162.0" y2="610.0" stroke="#475569" stroke-width="1.6" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+<rect x="1130.0" y="644.0" width="240.0" height="35" rx="6" fill="#FEF9C3" stroke="#EAB308" stroke-width="1.4"/>
+<text x="1250.0" y="666.0" font-size="13" fill="#713F12" text-anchor="middle">tasks voltam, readiness ok</text>
+<line x1="1239.0" y1="718.0" x2="979.5" y2="718.0" stroke="#475569" stroke-width="1.6" marker-end="url(#arr)"/>
+<path d="M1261.0,758.0 L1292.0,758.0 L1292.0,784.0 L1254.0,784.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#arr)"/>
+<text x="300.8" y="232.0" font-size="13" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">POST lançamento</text>
+<circle cx="160.0" cy="241.0" r="11" fill="#1F3A5F" stroke="#FFFFFF" stroke-width="2"/><text x="160.0" y="245.2" font-size="12" fill="#FFFFFF" text-anchor="middle" font-weight="700">1</text>
+<text x="573.2" y="283.0" font-size="13" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">COMMIT lançamento e outbox</text>
+<circle cx="432.5" cy="292.0" r="11" fill="#1F3A5F" stroke="#FFFFFF" stroke-width="2"/><text x="432.5" y="296.2" font-size="12" fill="#FFFFFF" text-anchor="middle" font-weight="700">2</text>
+<text x="291.8" y="334.0" font-size="13" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">201</text>
+<circle cx="432.5" cy="343.0" r="11" fill="#1F3A5F" stroke="#FFFFFF" stroke-width="2"/><text x="432.5" y="347.2" font-size="12" fill="#FFFFFF" text-anchor="middle" font-weight="700">3</text>
+<text x="845.8" y="442.0" font-size="13" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">relay continua publicando</text>
+<circle cx="705.0" cy="451.0" r="11" fill="#1F3A5F" stroke="#FFFFFF" stroke-width="2"/><text x="705.0" y="455.2" font-size="12" fill="#FFFFFF" text-anchor="middle" font-weight="700">4</text>
+<text x="300.8" y="550.0" font-size="13" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">novo POST</text>
+<circle cx="160.0" cy="559.0" r="11" fill="#1F3A5F" stroke="#FFFFFF" stroke-width="2"/><text x="160.0" y="563.2" font-size="12" fill="#FFFFFF" text-anchor="middle" font-weight="700">5</text>
+<text x="291.8" y="601.0" font-size="13" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">201</text>
+<circle cx="432.5" cy="610.0" r="11" fill="#1F3A5F" stroke="#FFFFFF" stroke-width="2"/><text x="432.5" y="614.2" font-size="12" fill="#FFFFFF" text-anchor="middle" font-weight="700">6</text>
+<text x="1109.2" y="709.0" font-size="13" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">consome o backlog</text>
+<circle cx="1250.0" cy="718.0" r="11" fill="#1F3A5F" stroke="#FFFFFF" stroke-width="2"/><text x="1250.0" y="722.2" font-size="12" fill="#FFFFFF" text-anchor="middle" font-weight="700">7</text>
+<text x="1302.0" y="767.0" font-size="13" fill="#334155" text-anchor="start" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">aplica em ordem de chegada sem</text>
+<text x="1302.0" y="784.0" font-size="13" fill="#334155" text-anchor="start" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">depender dela</text>
+<circle cx="1250.0" cy="758.0" r="11" fill="#1F3A5F" stroke="#FFFFFF" stroke-width="2"/><text x="1250.0" y="762.2" font-size="12" fill="#FFFFFF" text-anchor="middle" font-weight="700">8</text>
+</svg>

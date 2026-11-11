@@ -1,0 +1,136 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1170" width="1600" height="1170" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-labelledby="t d">
+<title id="t">C4 — Nível 3: componentes do lancamentos-service</title>
+<desc id="d">Componentes internos do lancamentos-service: LancamentoController, SegurancaConfig, casos de uso de registro, estorno e consulta, domínio Lancamento e Dinheiro, repositórios JPA, RelayOutbox e SnsPublicador, com Postgres, Cognito/Keycloak e o tópico SNS fora do container.</desc>
+<defs>
+<filter id="sh" x="-5%" y="-5%" width="110%" height="120%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0F172A" flood-opacity="0.08"/></filter>
+<marker id="ah" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#475569"/></marker>
+<marker id="ahr" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#DC2626"/></marker>
+</defs>
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<text x="40" y="62" font-size="30" font-weight="700" fill="#1F3A5F">C4 — Nível 3: componentes do lancamentos-service</text>
+<rect x="40" y="250" width="1520" height="700" rx="12" fill="#F8FAFC" stroke="#94A3B8" stroke-width="1.6" stroke-dasharray="6 5"/>
+<text x="56.0" y="274.0" font-size="14" font-weight="600" fill="#475569" text-anchor="start">lancamentos-service</text>
+<text x="211.6" y="274.0" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="start">[Container]</text>
+<rect x="65" y="95" width="292" height="115" rx="10" fill="#F1F5F9" stroke="#94A3B8" stroke-width="2" filter="url(#sh)"/>
+<g fill="none" stroke="#94A3B8" stroke-width="1.6"><rect x="332" y="108" width="16" height="11" rx="2"/><path d="M335.5,108 V105.5 a4.5,4.5 0 0 1 9,0 V108"/></g>
+<rect x="65" y="300" width="292" height="118" rx="10" fill="#E6F4F1" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<g fill="none" stroke="#0F766E" stroke-width="1.5"><rect x="335" y="306" width="13" height="16" rx="2"/><rect x="332" y="309" width="7" height="3.5" rx="1" fill="#FFFFFF"/><rect x="332" y="315.5" width="7" height="3.5" rx="1" fill="#FFFFFF"/></g>
+<rect x="463" y="300" width="256" height="118" rx="10" fill="#E6F4F1" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<g fill="none" stroke="#0F766E" stroke-width="1.5"><rect x="697" y="306" width="13" height="16" rx="2"/><rect x="694" y="309" width="7" height="3.5" rx="1" fill="#FFFFFF"/><rect x="694" y="315.5" width="7" height="3.5" rx="1" fill="#FFFFFF"/></g>
+<rect x="65" y="528" width="292" height="140" rx="10" fill="#E6F4F1" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<g fill="none" stroke="#0F766E" stroke-width="1.5"><rect x="335" y="534" width="13" height="16" rx="2"/><rect x="332" y="537" width="7" height="3.5" rx="1" fill="#FFFFFF"/><rect x="332" y="543.5" width="7" height="3.5" rx="1" fill="#FFFFFF"/></g>
+<rect x="463" y="528" width="256" height="140" rx="10" fill="#E6F4F1" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<g fill="none" stroke="#0F766E" stroke-width="1.5"><rect x="697" y="534" width="13" height="16" rx="2"/><rect x="694" y="537" width="7" height="3.5" rx="1" fill="#FFFFFF"/><rect x="694" y="543.5" width="7" height="3.5" rx="1" fill="#FFFFFF"/></g>
+<rect x="825" y="528" width="292" height="140" rx="10" fill="#E6F4F1" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<g fill="none" stroke="#0F766E" stroke-width="1.5"><rect x="1095" y="534" width="13" height="16" rx="2"/><rect x="1092" y="537" width="7" height="3.5" rx="1" fill="#FFFFFF"/><rect x="1092" y="543.5" width="7" height="3.5" rx="1" fill="#FFFFFF"/></g>
+<rect x="1223" y="528" width="310" height="140" rx="10" fill="#E6F4F1" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<g fill="none" stroke="#0F766E" stroke-width="1.5"><rect x="1511" y="534" width="13" height="16" rx="2"/><rect x="1508" y="537" width="7" height="3.5" rx="1" fill="#FFFFFF"/><rect x="1508" y="543.5" width="7" height="3.5" rx="1" fill="#FFFFFF"/></g>
+<rect x="463" y="798" width="256" height="118" rx="10" fill="#E6F4F1" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<g fill="none" stroke="#0F766E" stroke-width="1.5"><rect x="697" y="804" width="13" height="16" rx="2"/><rect x="694" y="807" width="7" height="3.5" rx="1" fill="#FFFFFF"/><rect x="694" y="813.5" width="7" height="3.5" rx="1" fill="#FFFFFF"/></g>
+<rect x="825" y="798" width="292" height="118" rx="10" fill="#E6F4F1" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<g fill="none" stroke="#0F766E" stroke-width="1.5"><rect x="1095" y="804" width="13" height="16" rx="2"/><rect x="1092" y="807" width="7" height="3.5" rx="1" fill="#FFFFFF"/><rect x="1092" y="813.5" width="7" height="3.5" rx="1" fill="#FFFFFF"/></g>
+<rect x="1223" y="798" width="310" height="118" rx="10" fill="#E6F4F1" stroke="#0F766E" stroke-width="2" filter="url(#sh)"/>
+<g fill="none" stroke="#0F766E" stroke-width="1.5"><rect x="1511" y="804" width="13" height="16" rx="2"/><rect x="1508" y="807" width="7" height="3.5" rx="1" fill="#FFFFFF"/><rect x="1508" y="813.5" width="7" height="3.5" rx="1" fill="#FFFFFF"/></g>
+<path d="M461.0,1017 A130.0,12 0 0 1 721.0,1017 V1113 A130.0,12 0 0 1 461.0,1113 Z" fill="#DBEAFE" stroke="#2563EB" stroke-width="2" filter="url(#sh)"/>
+<path d="M461.0,1017 A130.0,12 0 0 0 721.0,1017" fill="none" stroke="#2563EB" stroke-width="2"/>
+<rect x="1223.0" y="1005" width="310" height="115" rx="10" fill="#F3E8FF" stroke="#7C3AED" stroke-width="2" filter="url(#sh)"/>
+<g fill="none" stroke="#7C3AED" stroke-width="1.6" stroke-linejoin="round"><rect x="1508.0" y="1013" width="17" height="12" rx="1.5"/><path d="M1508.0,1013.5 L1516.5,1020 L1525.0,1013.5"/></g>
+<path d="M463.0,359.0 L357.0,359.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M503.0,418.0 L503.0,473.0 L211.0,473.0 L211.0,528.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M679.0,418.0 L679.0,473.0 L1011.0,473.0 L1011.0,528.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M719.0,359.0 L1378.0,359.0 L1378.0,528.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M357.0,598.0 L463.0,598.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M825.0,598.0 L719.0,598.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M211.0,668.0 L211.0,882.0 L463.0,882.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M885.0,668.0 L885.0,730.0 L639.0,730.0 L639.0,798.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M1283.0,668.0 L1283.0,768.0 L689.0,768.0 L689.0,798.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M591.0,916.0 L591.0,1005.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M825.0,857.0 L719.0,857.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M1117.0,857.0 L1223.0,857.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M1378.0,916.0 L1378.0,1005.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<path d="M211.0,300.0 L211.0,210.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<rect x="65" y="1014" width="34" height="16" rx="4" fill="#E6F4F1" stroke="#0F766E" stroke-width="1.6"/>
+<rect x="65" y="1038" width="34" height="16" rx="4" fill="#DBEAFE" stroke="#2563EB" stroke-width="1.6"/>
+<rect x="65" y="1062" width="34" height="16" rx="4" fill="#F3E8FF" stroke="#7C3AED" stroke-width="1.6"/>
+<rect x="65" y="1086" width="34" height="16" rx="4" fill="#F1F5F9" stroke="#94A3B8" stroke-width="1.6"/>
+<path d="M65.0,1118.0 L99.0,1118.0" fill="none" stroke="#475569" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#ah)"/>
+<text x="211.0" y="131.0" font-size="16" font-weight="600" fill="#334155" text-anchor="middle">Cognito ou Keycloak</text>
+<text x="211.0" y="151.0" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[OIDC]</text>
+<text x="211.0" y="170.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">JWKS</text>
+<text x="211.0" y="336.0" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">SegurancaConfig</text>
+<text x="211.0" y="356.0" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[config]</text>
+<text x="211.0" y="375.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">Valida issuer, assinatura</text>
+<text x="211.0" y="392.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">e escopo SCOPE_</text>
+<text x="591.0" y="336.0" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">LancamentoController</text>
+<text x="591.0" y="356.0" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[adapters.in.web]</text>
+<text x="591.0" y="375.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">DTOs e RFC 9457. Extrai</text>
+<text x="591.0" y="392.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">comerciante_id do JWT</text>
+<text x="211.0" y="564.0" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">RegistrarLancamentoServico</text>
+<text x="211.0" y="584.0" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[application.servico]</text>
+<text x="211.0" y="603.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">Idempotência por</text>
+<text x="211.0" y="620.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">impressao_digital</text>
+<text x="591.0" y="564.0" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">Lancamento e Dinheiro</text>
+<text x="591.0" y="584.0" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[domain.lancamento e domain.dinheiro]</text>
+<text x="591.0" y="603.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">Java puro. Sem Spring</text>
+<text x="971.0" y="564.0" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">EstornarLancamentoServico</text>
+<text x="971.0" y="584.0" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[application.servico]</text>
+<text x="971.0" y="603.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">Estorno único.</text>
+<text x="971.0" y="620.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">Idempotency-Key no POST</text>
+<text x="1378.0" y="564.0" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">ConsultarLancamentoServico e</text>
+<text x="1378.0" y="584.0" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">ListarLancamentosServico</text>
+<text x="1378.0" y="604.0" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[application.servico]</text>
+<text x="1378.0" y="623.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">Detalhe e página</text>
+<text x="1378.0" y="640.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">conteudo/pagina/tamanho/</text>
+<text x="1378.0" y="657.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">totalElementos/totalPaginas</text>
+<text x="591.0" y="834.0" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">Repositorios JPA</text>
+<text x="591.0" y="854.0" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[adapters.out.persistence]</text>
+<text x="591.0" y="873.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">lancamentos, idempotencia,</text>
+<text x="591.0" y="890.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">outbox_eventos</text>
+<text x="971.0" y="834.0" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">RelayOutbox</text>
+<text x="971.0" y="854.0" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[adapters.out.messaging]</text>
+<text x="971.0" y="873.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">SKIP LOCKED e</text>
+<text x="971.0" y="890.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">proxima_tentativa_em</text>
+<text x="1378.0" y="834.0" font-size="16" font-weight="600" fill="#0F3D3A" text-anchor="middle">SnsPublicador</text>
+<text x="1378.0" y="854.0" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[adapters.out.messaging]</text>
+<text x="1378.0" y="873.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">Publica em</text>
+<text x="1378.0" y="890.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">LANCAMENTOS_TOPIC_ARN</text>
+<text x="591.0" y="1051.0" font-size="16" font-weight="600" fill="#1E3A8A" text-anchor="middle">Postgres lancamentos</text>
+<text x="591.0" y="1071.0" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[PostgreSQL 17]</text>
+<text x="591.0" y="1090.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">Banco do serviço</text>
+<text x="1378.0" y="1041.0" font-size="16" font-weight="600" fill="#4C1D95" text-anchor="middle">SNS</text>
+<text x="1378.0" y="1061.0" font-size="12.5" font-weight="400" fill="#64748B" text-anchor="middle">[fluxo-caixa-lancamentos-events]</text>
+<text x="1378.0" y="1080.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="middle">Evento v1</text>
+<text x="410.0" y="319.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Exige token</text>
+<text x="410.0" y="335.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">antes do caso</text>
+<text x="410.0" y="351.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">de uso</text>
+<rect x="268.6" y="463.5" width="176.7" height="20.0" rx="3" fill="#FFFFFF"/>
+<text x="357.0" y="477.5" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">POST /api/v1/lancamentos</text>
+<rect x="720.3" y="463.5" width="249.3" height="20.0" rx="3" fill="#FFFFFF"/>
+<text x="845.0" y="477.5" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">POST /api/v1/lancamentos/id/estornos</text>
+<rect x="964.8" y="349.5" width="167.4" height="20.0" rx="3" fill="#FFFFFF"/>
+<text x="1048.5" y="363.5" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">GET /api/v1/lancamentos</text>
+<text x="410.0" y="574.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Constrói o</text>
+<text x="410.0" y="590.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">agregado</text>
+<text x="772.0" y="558.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Decide se</text>
+<text x="772.0" y="574.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">o estorno</text>
+<text x="772.0" y="590.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">é válido</text>
+<text x="221.0" y="730.0" font-size="13" font-weight="400" fill="#334155" text-anchor="start" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Persiste agregado,</text>
+<text x="221.0" y="746.0" font-size="13" font-weight="400" fill="#334155" text-anchor="start" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">outbox e idempotência</text>
+<text x="762.0" y="706.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Persiste o novo lançamento</text>
+<text x="762.0" y="722.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">e a outbox</text>
+<rect x="1082.9" y="758.5" width="194.2" height="20.0" rx="3" fill="#FFFFFF"/>
+<text x="1180.0" y="772.5" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Lê pelo comerciante do token</text>
+<text x="600.0" y="985.0" font-size="13" font-weight="400" fill="#334155" text-anchor="start" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">JDBC</text>
+<text x="772.0" y="833.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Lê outbox</text>
+<text x="772.0" y="849.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">não publicada</text>
+<text x="1170.0" y="833.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Publica e marca</text>
+<text x="1170.0" y="849.0" font-size="13" font-weight="400" fill="#334155" text-anchor="middle" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">publicado_em</text>
+<text x="1369.0" y="985.0" font-size="13" font-weight="400" fill="#334155" text-anchor="end" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Publish no ARN configurado</text>
+<text x="220.0" y="238.0" font-size="13" font-weight="400" fill="#334155" text-anchor="start" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Busca JWKS</text>
+<text x="65.0" y="1000.0" font-size="13" font-weight="700" fill="#475569" text-anchor="start">Legenda</text>
+<text x="109.0" y="1027.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="start">Componente</text>
+<text x="109.0" y="1051.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="start">Banco de dados</text>
+<text x="109.0" y="1075.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="start">Tópico de mensageria</text>
+<text x="109.0" y="1099.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="start">Sistema externo</text>
+<text x="109.0" y="1123.0" font-size="12.5" font-weight="400" fill="#334155" text-anchor="start">Relação (origem → destino)</text>
+</svg>

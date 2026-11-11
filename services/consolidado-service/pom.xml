@@ -21,7 +21,7 @@
         <java.version>25</java.version>
         <jacoco.version>0.8.16</jacoco.version>
         <archunit.version>1.5.1</archunit.version>
-        <springdoc.version>3.0.3</springdoc.version>
+        <springdoc.version>3.2.0</springdoc.version>
         <aws.sdk.version>2.57.12</aws.sdk.version>
         <resilience4j.version>2.4.0</resilience4j.version>
         <aws.jdbc.wrapper.version>4.6.0</aws.jdbc.wrapper.version>

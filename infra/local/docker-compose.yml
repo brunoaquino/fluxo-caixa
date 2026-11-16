@@ -60,7 +60,7 @@ services:
 
   keycloak:
     profiles: ["infra", "completo"]
-    image: quay.io/keycloak/keycloak:26.8.2-1
+    image: quay.io/keycloak/keycloak:26.8.2-2
     container_name: fluxo-caixa-keycloak
     command: ["start-dev", "--import-realm"]
     environment:
